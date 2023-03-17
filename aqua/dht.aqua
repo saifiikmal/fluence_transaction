@@ -1,20 +1,28 @@
 module Dht declares *
 
-data FdbDht:
-  public_key: string
-  alias: string
-  cid: string
-  data_key: string
-
 data FdbResult:
   success: bool
   err_msg: string
 
+data Transaction:
+  hash: string
+  from_peer_id: string
+  host_id: string
+  status: i64
+  data_key: string
+  metadata: string
+  sign: string
+  public_key: string
+  alias: string
+  timestamp: u64
+  encryption_type: string
+  metadata_cid: string
+
+data FdbTransactionsResult:
+  success: bool
+  err_msg: string
+  transactions: []Transaction
+
 service Dht("dht"):
-  fork(old_data_key: string, new_data_key: string, alias: string, public_key: string) -> FdbResult
-  get_latest_record_by_pk_and_key(key: string, public_key: string) -> FdbDht
-  get_records_by_key(key: string) -> []FdbDht
-  get_records_by_public_key(pk: string) -> []FdbDht
-  initialize() -> FdbResult
-  insert(data_key: string, alias: string, public_key: string, signature: string, message: string, enc: string) -> FdbResult
-  shutdown() -> FdbResult
+  get_transactions(data_key: string) -> FdbTransactionsResult
+  send_transaction(data_key: string, alias: string, public_key: string, signature: string, metadata: string, enc: string) -> FdbResult
