@@ -18,6 +18,10 @@ data FdbResult:
 
 data Transaction:
   hash: string
+  token_address: string
+  token_id: string
+  chain_id: string
+  version: string
   from_peer_id: string
   host_id: string
   status: i64
@@ -27,7 +31,7 @@ data Transaction:
   alias: string
   timestamp: u64
   encryption_type: string
-  metadata_cid: string
+  service_id: string
   method: string
   error_text: string
 
@@ -37,8 +41,8 @@ data FdbTransactionResult:
   transaction: Transaction
 
 service Dht("dht"):
-  create_metadata(transaction_hash: string)  
+  create_metadata(transaction_hash: string, on_create_result: bool, on_create_metadata: string, on_create_error_msg: string)  
   get_metadata(data_key: string) -> FdbMetadataResult
   get_transaction(hash: string) -> FdbTransactionResult
-  send_transaction(data_key: string, alias: string, public_key: string, signature: string, metadata: string, enc: string, method: string) -> FdbResult
-  update_metadata(data_key: string, alias: string, public_key: string, service_id: string)  
+  send_transaction(data_key: string, token_address: string, token_id: string, chain_id: string, version: string, alias: string, public_key: string, signature: string, metadata: string, enc: string, method: string) -> FdbResult
+  update_metadata(transaction_hash: string, on_update_result: bool, on_update_metadata: string, on_update_error_msg: string)  

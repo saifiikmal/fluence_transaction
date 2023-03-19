@@ -9,18 +9,19 @@ mod storage_impl;
 mod transaction;
 pub mod transactions_impl;
 
-use defaults::{ENCRYPTION_TYPE_ED25519, ENCRYPTION_TYPE_SCP256K1};
-use defaults::{METHOD_UPDATE, STATUS_FAILED};
+use defaults::{ENCRYPTION_TYPE_ED25519, ENCRYPTION_TYPE_SECP256K1, STATUS_SUCCESS};
+use defaults::{METHOD_CREATE, METHOD_UPDATE, STATUS_FAILED};
 use marine_rs_sdk::marine;
 use marine_rs_sdk::module_manifest;
 use marine_rs_sdk::WasmLoggerBuilder;
 
 use error::ServiceError::{
-    self, InternalError, InvalidOwner, InvalidSignature, NotSupportedEncryptionType,
+    self, InvalidMethod, InvalidOwner, InvalidSignature, NoEncryptionType,
+    NotSupportedEncryptionType,
 };
 use metadatas::Metadata;
+use result::FdbTransactionResult;
 use result::{FdbMetadataResult, FdbResult};
-use result::{FdbTransactionResult, FdbTransactionsResult};
 use std::time::{SystemTime, UNIX_EPOCH};
 use storage_impl::get_storage;
 use transaction::Transaction;
@@ -52,6 +53,10 @@ pub fn main() {
 #[marine]
 pub fn send_transaction(
     data_key: String,
+    token_address: String,
+    token_id: String,
+    chain_id: String,
+    version: String,
     alias: String,
     public_key: String,
     signature: String,
@@ -59,33 +64,50 @@ pub fn send_transaction(
     enc: String,
     method: String,
 ) -> FdbResult {
+    let mut service_id = "".to_string();
     let mut error: Option<ServiceError> = None;
-    let mut cid: String = "".to_string();
-    let mut enc_verify = ENCRYPTION_TYPE_SCP256K1.to_string();
-    let current_metadata;
+    let mut enc_verify = "".to_string();
     let storage = get_storage().expect("Database non existance");
 
-    if !error.is_none() {
-        if method == METHOD_UPDATE {
-            current_metadata = storage.get_metadata(data_key.clone()).unwrap();
-            if current_metadata.public_key != public_key {
-                error = Some(InvalidOwner(f!("not owner of data_key: {public_key}")));
-            }
-
-            enc_verify = current_metadata.enc;
-        } else {
-            if enc.clone().is_empty()
-                && enc.clone() != ENCRYPTION_TYPE_SCP256K1
-                && enc.clone() != ENCRYPTION_TYPE_ED25519
-            {
-                error = Some(NotSupportedEncryptionType(enc.clone()));
-            }
-
-            enc_verify = enc.clone();
+    if error.is_none() {
+        if method != METHOD_CREATE && method != METHOD_UPDATE {
+            error = Some(InvalidMethod(f!("invalid method: {method}")));
         }
     }
 
-    if !error.is_none() {
+    if error.is_none() {
+        if method == METHOD_UPDATE {
+            let result = storage.get_metadata(data_key.clone());
+            match result {
+                Ok(metadata) => {
+                    if metadata.public_key != public_key {
+                        error = Some(InvalidOwner(f!("not owner of data_key: {public_key}")));
+                    }
+
+                    enc_verify = metadata.enc;
+                    service_id = metadata.service_id;
+                }
+                Err(e) => error = Some(e),
+            }
+        } else {
+            enc_verify = enc.clone();
+            service_id = metadata.clone();
+        }
+    }
+
+    if error.is_none() {
+        if enc_verify.clone().is_empty() {
+            error = Some(NoEncryptionType())
+        } else {
+            if enc_verify.clone().ne(ENCRYPTION_TYPE_SECP256K1)
+                && enc_verify.clone().ne(ENCRYPTION_TYPE_ED25519)
+            {
+                error = Some(NotSupportedEncryptionType(enc_verify.clone()));
+            }
+        }
+    }
+
+    if error.is_none() {
         let v = verify(
             public_key.clone(),
             signature.clone(),
@@ -100,15 +122,14 @@ pub fn send_transaction(
 
     let cp = marine_rs_sdk::get_call_parameters();
 
-    if method == METHOD_UPDATE {
-        let result = put(metadata.clone(), "".to_string(), "".to_string(), 0);
-        cid = result.cid
-    }
-
     let now = SystemTime::now();
     let timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
 
     let mut transaction = Transaction::new(
+        token_address,
+        token_id,
+        chain_id,
+        version,
         cp.init_peer_id,
         cp.host_id,
         data_key,
@@ -117,7 +138,7 @@ pub fn send_transaction(
         alias,
         timestamp.as_millis() as u64,
         enc_verify,
-        cid,
+        service_id,
         method,
     );
 
@@ -126,6 +147,7 @@ pub fn send_transaction(
         transaction.status = STATUS_FAILED;
     }
 
+    log::info!("{:?}", transaction);
     let _ = storage.write_transaction(transaction.clone());
 
     FdbResult {
@@ -146,24 +168,81 @@ pub fn get_metadata(data_key: String) -> FdbMetadataResult {
 // *********** VALIDATOR *****************
 
 #[marine]
-pub fn create_metadata(transaction_hash: String) {
+pub fn create_metadata(
+    transaction_hash: String,
+    on_create_result: bool,
+    on_create_metadata: String,
+    on_create_error_msg: String,
+) {
     let storage = get_storage().expect("Internal error to database connector");
-    let transaction = storage.get_transaction(transaction_hash).unwrap();
+    let mut transaction = storage.get_transaction(transaction_hash).unwrap();
 
-    let metadata = Metadata::new(
-        transaction.data_key,
-        transaction.alias,
-        "".to_string(),
-        transaction.public_key,
-        transaction.encryption_type,
-        transaction.metadata,
-    );
+    if !on_create_result {
+        transaction.status = STATUS_FAILED;
+        transaction.error_text = on_create_error_msg;
+    } else {
+        let mut content_cid = "".to_string();
 
-    storage.write_metadata(metadata);
+        if !on_create_metadata.is_empty() {
+            let result = put(on_create_metadata, "".to_string(), "".to_string(), 0);
+            content_cid = result.cid
+        }
+
+        let metadata = Metadata::new(
+            transaction.data_key.clone(),
+            transaction.alias.clone(),
+            content_cid,
+            transaction.public_key.clone(),
+            transaction.encryption_type.clone(),
+            transaction.metadata.clone(), // service_id is stored in metadata
+        );
+
+        let _ = storage.write_metadata(metadata);
+
+        transaction.status = STATUS_SUCCESS;
+    }
+
+    // update transaction
+    let _ = storage.write_transaction(transaction);
 }
 
 #[marine]
-pub fn update_metadata(data_key: String, alias: String, public_key: String, service_id: String) {}
+pub fn update_metadata(
+    transaction_hash: String,
+    on_update_result: bool,
+    on_update_metadata: String,
+    on_update_error_msg: String,
+) {
+    let storage = get_storage().expect("Internal error to database connector");
+    let mut transaction = storage.get_transaction(transaction_hash).unwrap().clone();
+
+    if !on_update_result {
+        transaction.status = STATUS_FAILED;
+        transaction.error_text = on_update_error_msg;
+    } else {
+        let result = storage.get_metadata(transaction.data_key.clone());
+
+        let result_ipfs_dag_put = put(on_update_metadata, "".to_string(), "".to_string(), 0);
+        let content_cid = result_ipfs_dag_put.cid;
+
+        match result {
+            Ok(metadata) => {
+                let mut meta = metadata;
+                meta.cid = content_cid;
+                let _ = storage.write_metadata(meta);
+
+                transaction.status = STATUS_SUCCESS;
+            }
+            Err(e) => {
+                transaction.error_text = e.to_string();
+                transaction.status = STATUS_FAILED;
+            }
+        };
+    }
+
+    // update transaction
+    let _ = storage.write_transaction(transaction);
+}
 
 /************************ *********************/
 #[marine]

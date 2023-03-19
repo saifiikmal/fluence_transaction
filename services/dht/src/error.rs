@@ -19,4 +19,6 @@ pub enum ServiceError {
     InvalidOwner(String),
     #[error["Not supported encryption: {0}"]]
     NotSupportedEncryptionType(String),
+    #[error["Does not specify encryption"]]
+    NoEncryptionType(),
 }
