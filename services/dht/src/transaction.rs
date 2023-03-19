@@ -11,12 +11,13 @@ pub struct Transaction {
     pub status: i64,
     pub data_key: String,
     pub metadata: String,
-    pub sign: String,
     pub public_key: String,
     pub alias: String,
     pub timestamp: u64,
     pub encryption_type: String,
     pub metadata_cid: String,
+    pub method: String,
+    pub error_text: String,
 }
 
 impl Transaction {
@@ -25,12 +26,12 @@ impl Transaction {
         host_id: String,
         data_key: String,
         metadata: String,
-        sign: String,
         public_key: String,
         alias: String,
         timestamp: u64,
         encryption_type: String,
         metadata_cid: String,
+        method: String,
     ) -> Self {
         let hash = Self::generate_hash(
             from_peer_id.clone(),
@@ -40,6 +41,7 @@ impl Transaction {
             public_key.clone(),
             alias.clone(),
             encryption_type.clone(),
+            method.clone(),
         );
 
         Self {
@@ -49,12 +51,13 @@ impl Transaction {
             status: STATUS_PENDING,
             data_key,
             metadata,
-            sign,
             public_key,
             alias,
             timestamp,
             encryption_type,
             metadata_cid,
+            method,
+            error_text: "".to_string(),
         }
     }
 
@@ -66,12 +69,13 @@ impl Transaction {
         public_key: String,
         alias: String,
         encryption_type: String,
+        method: String,
     ) -> String {
         let mut hasher = Sha256::new();
         hasher.update(
             format!(
-                "{}{}{}{}{}{}{}",
-                from, host_id, data_key, metadata, public_key, alias, encryption_type
+                "{}{}{}{}{}{}{}{}",
+                from, host_id, data_key, metadata, public_key, alias, encryption_type, method
             )
             .as_bytes(),
         );

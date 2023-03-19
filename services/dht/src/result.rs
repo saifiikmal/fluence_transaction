@@ -1,25 +1,34 @@
 use eyre::Result;
 use marine_rs_sdk::marine;
 
-use crate::{error::ServiceError, transaction::Transaction};
+use crate::{error::ServiceError, metadatas::Metadata, transaction::Transaction};
 
 #[marine]
 #[derive(Debug)]
 pub struct FdbResult {
-    pub success: bool,
-    pub err_msg: String,
+    pub transaction_hash: String,
 }
 
-impl From<Result<(), ServiceError>> for FdbResult {
-    fn from(result: Result<(), ServiceError>) -> Self {
+#[marine]
+#[derive(Debug)]
+pub struct FdbTransactionResult {
+    pub success: bool,
+    pub err_msg: String,
+    pub transaction: Transaction,
+}
+
+impl From<Result<Transaction, ServiceError>> for FdbTransactionResult {
+    fn from(result: Result<Transaction, ServiceError>) -> Self {
         match result {
-            Ok(_) => Self {
+            Ok(transaction) => Self {
                 success: true,
                 err_msg: "".to_string(),
+                transaction,
             },
             Err(err) => Self {
                 success: false,
                 err_msg: err.to_string(),
+                transaction: Transaction::default(),
             },
         }
     }
@@ -45,6 +54,31 @@ impl From<Result<Vec<Transaction>, ServiceError>> for FdbTransactionsResult {
                 success: false,
                 err_msg: err.to_string(),
                 transactions: Vec::new(),
+            },
+        }
+    }
+}
+
+#[marine]
+#[derive(Debug)]
+pub struct FdbMetadataResult {
+    pub success: bool,
+    pub err_msg: String,
+    pub metadata: Metadata,
+}
+
+impl From<Result<Metadata, ServiceError>> for FdbMetadataResult {
+    fn from(result: Result<Metadata, ServiceError>) -> Self {
+        match result {
+            Ok(metadata) => Self {
+                success: true,
+                err_msg: "".to_string(),
+                metadata,
+            },
+            Err(err) => Self {
+                success: false,
+                err_msg: err.to_string(),
+                metadata: Metadata::default(),
             },
         }
     }

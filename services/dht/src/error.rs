@@ -13,4 +13,10 @@ pub enum ServiceError {
     InternalError(String),
     #[error("Invalid signature: {0}")]
     InvalidSignature(String),
+    #[error["Invalid method: {0}"]]
+    InvalidMethod(String),
+    #[error["Invalid owner: {0}"]]
+    InvalidOwner(String),
+    #[error["Not supported encryption: {0}"]]
+    NotSupportedEncryptionType(String),
 }

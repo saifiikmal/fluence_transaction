@@ -1,6 +1,10 @@
 pub static DB_PATH: &str = "/tmp/node.db";
 pub static TRANSACTIONS_TABLE_NAME: &str = "transactions";
-
+pub static METADATAS_TABLE_NAME: &str = "metadatas";
 pub static STATUS_PENDING: i64 = 0;
 pub static STATUS_SUCCESS: i64 = 1;
-pub static STATUS_ERROR: i64 = 2;
+pub static STATUS_FAILED: i64 = 2;
+pub static METHOD_CREATE: &str = "z_create";
+pub static METHOD_UPDATE: &str = "z_update";
+pub static ENCRYPTION_TYPE_SCP256K1: &str = "secp256k1";
+pub static ENCRYPTION_TYPE_ED25519: &str = "ed25519";
