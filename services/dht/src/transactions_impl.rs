@@ -1,6 +1,6 @@
-use crate::defaults::{METHOD_CREATE, METHOD_UPDATE, TRANSACTIONS_TABLE_NAME};
+use crate::defaults::TRANSACTIONS_TABLE_NAME;
 use crate::error::ServiceError;
-use crate::error::ServiceError::{InternalError, InvalidMethod};
+use crate::error::ServiceError::InternalError;
 use crate::storage_impl::Storage;
 use crate::transaction::Transaction;
 use marine_sqlite_connector::{State, Statement, Value};
@@ -11,22 +11,20 @@ impl Storage {
             "
             CREATE TABLE IF NOT EXISTS {} (
                 hash TEXT PRIMARY KEY,
-                token_address TEXT NOT NULL,
-                token_id TEXT NOT NULL,
-                chain_id TEXT NOT NULL,
-                version TEXT NOT NULL,
+                token_key TEXT NOT NULL,
+                data_key TEXT NOT NULL,
                 from_peer_id TEXT NOT NULL,
                 host_id TEXT NOT NULL,
                 status INTEGER NOT NULL,
-                data_key TEXT NOT NULL,
-                metadata TEXT NOT NULL,
+                data TEXT NOT NULL,
                 public_key TEXT NOT NULL,
                 alias TEXT,
                 timestamp INTEGER NOT NULL,
                 error_text TEXT NULL,
                 encryption_type TEXT NOT NULL,
                 service_id TEXT,
-                method TEXT NOT NULL
+                method TEXT NOT NULL,
+                nonce INTEGER NOT NULL
             );",
             TRANSACTIONS_TABLE_NAME
         );
@@ -48,25 +46,23 @@ impl Storage {
 
     pub fn write_transaction(&self, transaction: Transaction) -> Result<String, ServiceError> {
         let s = format!(
-            "insert into {} (hash, token_address, token_id, chain_id, version, from_peer_id, host_id, status, data_key, metadata, public_key, alias, timestamp, encryption_type, service_id, method, error_text) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
+            "insert into {} (hash, token_key, from_peer_id, host_id, status, data_key, data, public_key, alias, timestamp, encryption_type,service_id, method, error_text, nonce) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
             TRANSACTIONS_TABLE_NAME,
             transaction.hash,
-            transaction.token_address,
-            transaction.token_id,
-            transaction.chain_id,
-            transaction.version,
+            transaction.token_key,
             transaction.from_peer_id,
             transaction.host_id,
             transaction.status,
             transaction.data_key,
-            transaction.metadata,
+            transaction.data,
             transaction.public_key,
             transaction.alias,
             transaction.timestamp,
             transaction.encryption_type,
             transaction.service_id,
             transaction.method,
-            transaction.error_text
+            transaction.error_text,
+            transaction.nonce
         );
 
         self.connection.execute(s)?;
@@ -77,7 +73,7 @@ impl Storage {
     pub fn update_transaction_status(
         &self,
         hash: String,
-        status: i32,
+        status: i64,
         error_text: String,
     ) -> Result<(), ServiceError> {
         self.connection.execute(format!(
@@ -112,21 +108,19 @@ impl Storage {
 pub fn read(statement: &Statement) -> Result<Transaction, ServiceError> {
     Ok(Transaction {
         hash: statement.read::<String>(0)?,
-        token_address: statement.read::<String>(1)?,
-        token_id: statement.read::<String>(2)?,
-        chain_id: statement.read::<String>(3)?,
-        version: statement.read::<String>(4)?,
-        from_peer_id: statement.read::<String>(5)?,
-        host_id: statement.read::<String>(6)?,
-        status: statement.read::<i64>(7)? as i64,
-        data_key: statement.read::<String>(8)?,
-        metadata: statement.read::<String>(9)?,
-        public_key: statement.read::<String>(10)?,
-        alias: statement.read::<String>(11)?,
-        timestamp: statement.read::<i64>(12)? as u64,
-        error_text: statement.read::<String>(13)?,
-        encryption_type: statement.read::<String>(14)?,
-        service_id: statement.read::<String>(15)?,
-        method: statement.read::<String>(16)?,
+        token_key: statement.read::<String>(1)?,
+        data_key: statement.read::<String>(2)?,
+        from_peer_id: statement.read::<String>(3)?,
+        host_id: statement.read::<String>(4)?,
+        status: statement.read::<i64>(5)? as i64,
+        data: statement.read::<String>(6)?,
+        public_key: statement.read::<String>(7)?,
+        alias: statement.read::<String>(8)?,
+        timestamp: statement.read::<i64>(9)? as u64,
+        error_text: statement.read::<String>(10)?,
+        encryption_type: statement.read::<String>(11)?,
+        service_id: statement.read::<String>(12)?,
+        method: statement.read::<String>(13)?,
+        nonce: statement.read::<i64>(14)?,
     })
 }

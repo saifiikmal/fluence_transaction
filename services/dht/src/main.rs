@@ -2,6 +2,8 @@
 
 mod defaults;
 mod error;
+mod meta_contract;
+mod meta_contract_impl;
 mod metadatas;
 mod metadatas_impl;
 mod result;
@@ -19,8 +21,9 @@ use error::ServiceError::{
     self, InvalidMethod, InvalidOwner, InvalidSignature, NoEncryptionType,
     NotSupportedEncryptionType,
 };
+use meta_contract::MetaContract;
 use metadatas::Metadata;
-use result::FdbTransactionResult;
+use result::{FdbMetaContractResult, FdbTransactionResult};
 use result::{FdbMetadataResult, FdbResult};
 use std::time::{SystemTime, UNIX_EPOCH};
 use storage_impl::get_storage;
@@ -46,6 +49,7 @@ pub fn main() {
         .unwrap();
 
     let storage = get_storage().unwrap();
+    storage.create_meta_contract_tables();
     storage.create_transactions_tables();
     storage.create_metadatas_tables();
 }
@@ -53,16 +57,14 @@ pub fn main() {
 #[marine]
 pub fn send_transaction(
     data_key: String,
-    token_address: String,
-    token_id: String,
-    chain_id: String,
-    version: String,
+    token_key: String,
     alias: String,
     public_key: String,
     signature: String,
-    metadata: String,
+    data: String,
     enc: String,
     method: String,
+    nonce: i64,
 ) -> FdbResult {
     let mut service_id = "".to_string();
     let mut error: Option<ServiceError> = None;
@@ -89,9 +91,9 @@ pub fn send_transaction(
                 }
                 Err(e) => error = Some(e),
             }
-        } else {
+        } else if method == METHOD_CREATE {
             enc_verify = enc.clone();
-            service_id = metadata.clone();
+            service_id = data.clone();
         }
     }
 
@@ -111,7 +113,7 @@ pub fn send_transaction(
         let v = verify(
             public_key.clone(),
             signature.clone(),
-            metadata.clone(),
+            data.clone(),
             enc_verify.clone(),
         );
 
@@ -126,14 +128,12 @@ pub fn send_transaction(
     let timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
 
     let mut transaction = Transaction::new(
-        token_address,
-        token_id,
-        chain_id,
-        version,
+        token_key,
         cp.init_peer_id,
         cp.host_id,
         data_key,
-        metadata,
+        nonce,
+        data,
         public_key,
         alias,
         timestamp.as_millis() as u64,
@@ -165,6 +165,75 @@ pub fn get_metadata(data_key: String) -> FdbMetadataResult {
     wrapped_try(|| get_storage()?.get_metadata(data_key)).into()
 }
 
+#[marine]
+pub fn get_meta_contract(token_key: String) -> FdbMetaContractResult {
+    wrapped_try(|| get_storage()?.get_meta_contract(token_key)).into()
+}
+
+// *********** SMART CONTRACT *****************
+#[marine]
+pub fn bind_meta_contract(transaction_hash: String) {
+    let mut current_meta_contract;
+    let mut is_update = false;
+    let mut error: Option<ServiceError> = None;
+
+    let storage = get_storage().expect("Internal error to database connector");
+
+    let mut transaction = storage.get_transaction(transaction_hash).unwrap().clone();
+
+    let sm_result = storage.get_meta_contract(transaction.token_key.clone());
+
+    match sm_result {
+        Ok(contract) => {
+            if transaction.public_key != contract.public_key {
+                error = Some(InvalidOwner(f!("{transaction.public_key}")))
+            } else {
+                current_meta_contract = contract;
+                current_meta_contract.service_id = transaction.data.clone();
+            }
+            is_update = true;
+        }
+        Err(ServiceError::RecordNotFound(_)) => {}
+        Err(e) => error = Some(e),
+    }
+
+    if error.is_none() {
+        let meta_result;
+
+        if !is_update {
+            current_meta_contract = MetaContract {
+                token_key: transaction.token_key.clone(),
+                service_id: transaction.service_id.clone(),
+                public_key: transaction.public_key.clone(),
+            };
+
+            meta_result = storage.write_meta_contract(current_meta_contract);
+        } else {
+            meta_result = storage
+                .rebind_meta_contract(transaction.token_key.clone(), transaction.data.clone());
+        }
+
+        match meta_result {
+            Ok(()) => {}
+            Err(e) => error = Some(e),
+        }
+    }
+
+    if !error.is_none() {
+        transaction.error_text = error.unwrap().to_string();
+        transaction.status = STATUS_FAILED;
+    } else {
+        transaction.status = STATUS_SUCCESS;
+        transaction.error_text = "".to_string();
+    }
+
+    let _ = storage.update_transaction_status(
+        transaction.hash.clone(),
+        transaction.status.clone(),
+        transaction.error_text.clone(),
+    );
+}
+
 // *********** VALIDATOR *****************
 
 #[marine]
@@ -194,7 +263,7 @@ pub fn create_metadata(
             content_cid,
             transaction.public_key.clone(),
             transaction.encryption_type.clone(),
-            transaction.metadata.clone(), // service_id is stored in metadata
+            transaction.data.clone(), // service_id is stored in metadata
         );
 
         let _ = storage.write_metadata(metadata);

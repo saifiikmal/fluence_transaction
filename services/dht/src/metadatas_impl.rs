@@ -1,6 +1,6 @@
 use crate::defaults::METADATAS_TABLE_NAME;
 use crate::error::ServiceError;
-use crate::error::ServiceError::InternalError;
+use crate::error::ServiceError::RecordNotFound;
 use crate::metadatas::Metadata;
 use crate::storage_impl::Storage;
 use marine_sqlite_connector::{State, Statement, Value};
@@ -14,7 +14,6 @@ impl Storage {
                 alias varchar(255) not null,
                 cid TEXT null,
                 public_key TEXT not null,
-                enc varchar(20) not null,
                 service_id varchar(255) null
             );",
             METADATAS_TABLE_NAME
@@ -90,9 +89,7 @@ impl Storage {
         if let State::Row = statement.next()? {
             read(&statement)
         } else {
-            Err(InternalError(f!(
-                "not found non-host records for given data_key: {data_key}"
-            )))
+            Err(RecordNotFound(f!("{data_key}")))
         }
     }
 

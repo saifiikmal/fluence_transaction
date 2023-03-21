@@ -11,6 +11,8 @@ pub enum ServiceError {
     ),
     #[error("Internal error: {0}")]
     InternalError(String),
+    #[error("Record not found: {0}")]
+    RecordNotFound(String),
     #[error("Invalid signature: {0}")]
     InvalidSignature(String),
     #[error["Invalid method: {0}"]]

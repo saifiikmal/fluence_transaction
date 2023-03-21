@@ -1,6 +1,7 @@
 pub static DB_PATH: &str = "/tmp/node.db";
 pub static TRANSACTIONS_TABLE_NAME: &str = "transactions";
 pub static METADATAS_TABLE_NAME: &str = "metadatas";
+pub static META_CONTRACT_TABLE_NAME: &str = "metacontracts";
 pub static STATUS_PENDING: i64 = 0;
 pub static STATUS_SUCCESS: i64 = 1;
 pub static STATUS_FAILED: i64 = 2;
