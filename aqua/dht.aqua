@@ -49,7 +49,7 @@ data FdbTransactionResult:
   transaction: Transaction
 
 service Dht("dht"):
-  binding_meta_contract(transaction_hash: string)  
+  bind_meta_contract(transaction_hash: string)  
   create_metadata(transaction_hash: string, on_create_result: bool, on_create_metadata: string, on_create_error_msg: string)  
   get_meta_contract(token_key: string) -> FdbMetaContractResult
   get_metadata(data_key: string) -> FdbMetadataResult
