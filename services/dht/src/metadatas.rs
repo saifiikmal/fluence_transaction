@@ -8,7 +8,6 @@ pub struct Metadata {
     pub cid: String,
     pub public_key: String,
     pub enc: String,
-    pub service_id: String,
 }
 
 impl Metadata {
@@ -18,7 +17,6 @@ impl Metadata {
         cid: String,
         public_key: String,
         enc: String,
-        service_id: String,
     ) -> Self {
         Self {
             data_key,
@@ -26,7 +24,6 @@ impl Metadata {
             cid,
             public_key,
             enc,
-            service_id,
         }
     }
 }

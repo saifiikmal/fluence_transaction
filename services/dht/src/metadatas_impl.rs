@@ -13,8 +13,7 @@ impl Storage {
                 data_key TEXT not null primary key unique,
                 alias varchar(255) not null,
                 cid TEXT null,
-                public_key TEXT not null,
-                service_id varchar(255) null
+                public_key TEXT not null
             );",
             METADATAS_TABLE_NAME
         );
@@ -66,19 +65,6 @@ impl Storage {
         Ok(())
     }
 
-    pub fn update_service_id(&self, data_key: String, service_id: i32) -> Result<(), ServiceError> {
-        self.connection.execute(format!(
-            "
-          update {}
-          set service_id = '{}'
-          where data_key = '{}';
-          ",
-            METADATAS_TABLE_NAME, service_id, data_key
-        ))?;
-
-        Ok(())
-    }
-
     pub fn get_metadata(&self, data_key: String) -> Result<Metadata, ServiceError> {
         let mut statement = self.connection.prepare(f!(
             "SELECT * FROM {METADATAS_TABLE_NAME} WHERE data_key = ?"
@@ -117,6 +103,5 @@ pub fn read(statement: &Statement) -> Result<Metadata, ServiceError> {
         cid: statement.read::<String>(2)?,
         public_key: statement.read::<String>(3)?,
         enc: statement.read::<String>(4)?,
-        service_id: statement.read::<String>(5)?,
     })
 }

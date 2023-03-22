@@ -1,4 +1,4 @@
-use crate::defaults::TRANSACTIONS_TABLE_NAME;
+use crate::defaults::{STATUS_PENDING, TRANSACTIONS_TABLE_NAME};
 use crate::error::ServiceError;
 use crate::error::ServiceError::InternalError;
 use crate::storage_impl::Storage;
@@ -102,6 +102,22 @@ impl Storage {
                 "not found non-host records for given key_hash: {hash}"
             )))
         }
+    }
+
+    pub fn get_pending_transactions(&self) -> Result<Vec<Transaction>, ServiceError> {
+        let mut statement = self.connection.prepare(f!(
+            "SELECT * FROM {TRANSACTIONS_TABLE_NAME} WHERE status = ?"
+        ))?;
+
+        statement.bind(1, &Value::Integer(STATUS_PENDING))?;
+
+        let mut transactions = Vec::new();
+
+        while let State::Row = statement.next()? {
+            transactions.push(read(&statement)?);
+        }
+
+        Ok(transactions)
     }
 }
 

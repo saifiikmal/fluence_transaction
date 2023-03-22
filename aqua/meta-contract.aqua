@@ -1,0 +1,9 @@
+module MetaContract declares *
+
+data MetaContractResult:
+  result: bool
+  metadatas: string
+  error_string: string
+
+service MetaContract("meta-contract"):
+  on_execute(content: string) -> MetaContractResult

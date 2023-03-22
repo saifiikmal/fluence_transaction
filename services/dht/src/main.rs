@@ -12,7 +12,7 @@ mod transaction;
 pub mod transactions_impl;
 
 use defaults::{ENCRYPTION_TYPE_ED25519, ENCRYPTION_TYPE_SECP256K1, STATUS_SUCCESS};
-use defaults::{METHOD_CREATE, METHOD_UPDATE, STATUS_FAILED};
+use defaults::{METHOD_CONTRACT, METHOD_METADATA, STATUS_FAILED};
 use marine_rs_sdk::marine;
 use marine_rs_sdk::module_manifest;
 use marine_rs_sdk::WasmLoggerBuilder;
@@ -23,7 +23,7 @@ use error::ServiceError::{
 };
 use meta_contract::MetaContract;
 use metadatas::Metadata;
-use result::{FdbMetaContractResult, FdbTransactionResult};
+use result::{FdbMetaContractResult, FdbTransactionResult, FdbTransactionsResult};
 use result::{FdbMetadataResult, FdbResult};
 use std::time::{SystemTime, UNIX_EPOCH};
 use storage_impl::get_storage;
@@ -72,13 +72,13 @@ pub fn send_transaction(
     let storage = get_storage().expect("Database non existance");
 
     if error.is_none() {
-        if method != METHOD_CREATE && method != METHOD_UPDATE {
+        if method != METHOD_CONTRACT && method != METHOD_METADATA {
             error = Some(InvalidMethod(f!("invalid method: {method}")));
         }
     }
 
     if error.is_none() {
-        if method == METHOD_UPDATE {
+        if method == METHOD_METADATA {
             let result = storage.get_metadata(data_key.clone());
             match result {
                 Ok(metadata) => {
@@ -87,11 +87,10 @@ pub fn send_transaction(
                     }
 
                     enc_verify = metadata.enc;
-                    service_id = metadata.service_id;
                 }
                 Err(e) => error = Some(e),
             }
-        } else if method == METHOD_CREATE {
+        } else if method == METHOD_CONTRACT {
             enc_verify = enc.clone();
             service_id = data.clone();
         }
@@ -168,6 +167,11 @@ pub fn get_metadata(data_key: String) -> FdbMetadataResult {
 #[marine]
 pub fn get_meta_contract(token_key: String) -> FdbMetaContractResult {
     wrapped_try(|| get_storage()?.get_meta_contract(token_key)).into()
+}
+
+#[marine]
+pub fn get_pending_transactions() -> FdbTransactionsResult {
+    wrapped_try(|| get_storage()?.get_pending_transactions()).into()
 }
 
 // *********** SMART CONTRACT *****************
@@ -263,7 +267,6 @@ pub fn create_metadata(
             content_cid,
             transaction.public_key.clone(),
             transaction.encryption_type.clone(),
-            transaction.data.clone(), // service_id is stored in metadata
         );
 
         let _ = storage.write_metadata(metadata);
