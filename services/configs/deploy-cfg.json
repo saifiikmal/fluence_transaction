@@ -1,0 +1,33 @@
+{
+  "zero": {
+    "modules": [
+      {
+        "name": "crypto",
+        "path": "./artifacts/crypto.wasm",
+        "logger_enabled": true
+      },
+      {
+        "name": "ipfsdag",
+        "path": "./artifacts/ipfsdag.wasm",
+        "logger_enabled": true,
+        "mounted_binaries": [
+          ["ipfs", "/usr/bin/ipfs"],
+          ["bash", "/usr/bin/bash"]
+        ],
+        "envs": [["/tmp/vault", "./tmp"]]
+      },
+      {
+        "name": "sqlite3",
+        "path": "./artifacts/sqlite3.wasm",
+        "preopened_files": ["./tmp"],
+        "mapped_dirs": [["tmp", "./tmp"]],
+        "logger_enabled": true
+      },
+      {
+        "name": "node",
+        "path": "./artifacts/node.wasm",
+        "logger_enabled": true
+      }
+    ]
+  }
+}

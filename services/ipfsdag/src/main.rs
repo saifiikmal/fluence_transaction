@@ -49,9 +49,10 @@ fn get_timeout_string(timeout: u64) -> String {
 }
 
 #[marine]
-pub fn put(
+pub fn put_block(
     content: String,
     previous_cid: String,
+    transaction: String,
     api_multiaddr: String,
     timeout_sec: u64,
 ) -> IpfsDagPutResult {
@@ -70,24 +71,53 @@ pub fn put(
         t = timeout_sec;
     }
 
-    let block = serialize(content, previous_cid.clone());
-    // let o = serde_json::to_string(&block).unwrap();
+    log::info!("{:?} {:?} {:?}", content, previous_cid, transaction);
+
+    let block = serialize(content, previous_cid.clone(), transaction.clone());
 
     let input;
 
     if previous_cid.is_empty() {
         input = format!(
-            r#"echo '{{"timestamp": {}, "content": {}, "previous": "{{}}" }}' | ipfs dag put"#,
-            block.timestamp, block.content
+            r#"echo '{{"timestamp": {}, "content": {}, "previous": "{{}}", "transaction": {} }}' | ipfs dag put"#,
+            block.timestamp, block.content, block.transaction
         );
     } else {
         input = format!(
-            r#"echo '{{"timestamp": {}, "content": {}, "previous": {{"/": "{}" }} }}' | ipfs dag put"#,
-            block.timestamp, block.content, previous_cid
+            r#"echo '{{"timestamp": {}, "content": {}, "previous": {{"/": "{}" }}, "transaction": {} }}' | ipfs dag put"#,
+            block.timestamp, block.content, previous_cid, block.transaction
         );
     }
 
     let args = make_cmd_args(vec![input], address, t);
+
+    let cmd = vec![String::from("-c"), args.join(" ")];
+
+    log::info!("ipfs put args : {:?}", cmd);
+
+    unwrap_mounted_binary_result(bash(cmd))
+        .map(|res| res.trim().to_string())
+        .into()
+}
+
+#[marine]
+pub fn put(content: String, api_multiaddr: String, timeout_sec: u64) -> IpfsDagPutResult {
+    let address: String;
+    let t;
+
+    if api_multiaddr.is_empty() {
+        address = DEFAULT_IPFS_MULTIADDR.to_string();
+    } else {
+        address = api_multiaddr;
+    }
+
+    if timeout_sec == 0 {
+        t = DEFAULT_TIMEOUT_SEC;
+    } else {
+        t = timeout_sec;
+    }
+
+    let args = make_cmd_args(vec![content], address, t);
 
     let cmd = vec![String::from("-c"), args.join(" ")];
 

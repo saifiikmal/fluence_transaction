@@ -15,8 +15,8 @@ cd ../ipfsdag
 cargo update --aggressive
 marine build --release
 
-echo "compiling dht..."
-cd ../dht
+echo "compiling node..."
+cd ../node
 cargo update --aggressive
 marine build --release
 
@@ -26,8 +26,8 @@ mkdir -p artifacts
 rm -f artifacts/*.wasm
 cp target/wasm32-wasi/release/crypto.wasm artifacts/
 cp target/wasm32-wasi/release/ipfsdag.wasm artifacts/
-cp target/wasm32-wasi/release/dht.wasm artifacts/
-marine aqua artifacts/dht.wasm -s Dht -i dht > ../aqua/dht.aqua
+cp target/wasm32-wasi/release/node.wasm artifacts/
+marine aqua artifacts/node.wasm -s Node -i node > ../aqua/node.aqua
 
 wget https://github.com/fluencelabs/sqlite/releases/download/v0.18.0_w/sqlite3.wasm
 mv sqlite3.wasm artifacts/

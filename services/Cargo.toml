@@ -2,7 +2,5 @@
 members = [
     "crypto",
     "ipfsdag",
-    # "data",
-    "dht",
-    # "facade"
+    "node",
 ]

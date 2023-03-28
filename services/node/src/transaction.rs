@@ -1,9 +1,10 @@
 use crate::defaults::STATUS_PENDING;
 use marine_rs_sdk::marine;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 #[marine]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize)]
 pub struct Transaction {
     pub hash: String,
     pub token_key: String,
@@ -20,6 +21,13 @@ pub struct Transaction {
     pub service_id: String,
     pub method: String,
     pub error_text: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct TransactionSubset {
+    pub hash: String,
+    pub timestamp: u64,
+    pub meta_contract_id: String,
 }
 
 impl Transaction {

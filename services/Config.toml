@@ -24,17 +24,7 @@ modules_dir = "artifacts/"
     preopened_files = ["/tmp"]
     mapped_dirs = { "tmp" = "./tmp" }
 
-# [[module]]
-#     name = "fdb_data"
-#     mem_pages_count = 100
-#     logger_enabled = true
-
 [[module]]
-    name = "dht"
+    name = "node"
     mem_pages_count = 100
     logger_enabled = true
-
-# [[module]]
-#     name = "fdb_facade"
-#     mem_pages_count = 100
-#     logger_enabled = true

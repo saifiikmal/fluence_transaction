@@ -13,7 +13,8 @@ impl Storage {
                 data_key TEXT not null primary key unique,
                 alias varchar(255) not null,
                 cid TEXT null,
-                public_key TEXT not null
+                public_key TEXT not null,
+                enc TEXT not null
             );",
             METADATAS_TABLE_NAME
         );
@@ -39,38 +40,51 @@ impl Storage {
      */
     pub fn write_metadata(&self, metadata: Metadata) -> Result<(), ServiceError> {
         let s = format!(
-            "insert into {} (data_key, alias, public_key, enc) values ('{}', '{}', '{}', '{}');",
+            "insert into {} (data_key, alias, cid, public_key, enc) values ('{}', '{}', '{}', '{}', '{}');",
             METADATAS_TABLE_NAME,
             metadata.data_key,
             metadata.alias,
+            metadata.cid,
             metadata.public_key,
             metadata.enc
         );
+
+        log::info!("{}", s);
 
         self.connection.execute(s)?;
 
         Ok(())
     }
 
-    pub fn update_cid(&self, data_key: String, cid: i32) -> Result<(), ServiceError> {
+    pub fn update_cid(
+        &self,
+        data_key: String,
+        public_key: String,
+        cid: String,
+    ) -> Result<(), ServiceError> {
         self.connection.execute(format!(
             "
           update {}
           set cid = '{}'
-          where data_key = '{}';
+          where data_key = '{}' AND public_key = '{}';
           ",
-            METADATAS_TABLE_NAME, cid, data_key
+            METADATAS_TABLE_NAME, cid, data_key, public_key
         ))?;
 
         Ok(())
     }
 
-    pub fn get_metadata(&self, data_key: String) -> Result<Metadata, ServiceError> {
+    pub fn get_owner_metadata_by_datakey(
+        &self,
+        data_key: String,
+        public_key: String,
+    ) -> Result<Metadata, ServiceError> {
         let mut statement = self.connection.prepare(f!(
-            "SELECT * FROM {METADATAS_TABLE_NAME} WHERE data_key = ?"
+            "SELECT * FROM {METADATAS_TABLE_NAME} WHERE data_key = ? AND public_key = ?"
         ))?;
 
         statement.bind(1, &Value::String(data_key.clone()))?;
+        statement.bind(2, &Value::String(public_key.clone()))?;
 
         if let State::Row = statement.next()? {
             read(&statement)
