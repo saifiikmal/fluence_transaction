@@ -1,0 +1,41 @@
+import "node.aqua"
+import "meta-contract.aqua"
+
+const NODE_SERVICE_ID = "e4229cfa-a4ee-48a4-b50c-fdbec1466e74"
+
+func validateTransaction(hash: string):
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    result <- Node.get_transaction(hash)
+
+    if result.transaction.method == "contract":
+      Node.bind_meta_contract(hash)
+    
+    -- if result.transaction.method == "metadata":
+    --   fdbMetaContractResult <- Node.get_meta_contract(result.transaction.token_key)
+    --   if fdbMetaContractResult.success:
+    --     MetaContract fdbMetaContractResult.meta.service_id
+    --     metaContractResult <- MetaContract.on_execute(result.transaction.data)
+        -- Dht.create_metadata(hash, metaContractResult.result, metaContractResult.metadatas, "")
+
+  -- <- true
+
+func getPendingTransactions_3600():
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    result <- Node.get_pending_transactions()
+
+    if result.success:
+      for tx <- result.transactions:
+        validateTransaction(tx.hash)
+
+func new_transaction(count: i64):
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    Node.send_transaction("1", "11", "", "0xce2f68c1cfea8748f56032f7601ee04715e165c0", "0x460ab768ca58c7c6f16b5ea59c699a90d9619f3c80702f942e9b4027550b5d3b1b50e1aa15ca808f0465820b6fe307cd711ef97804def6640abf48e75456ed9c1b", "{\"hello\":\"is me\"}", "secp256k1", "metadata", count)
+
+func pending_txs() -> FdbTransactionsResult:
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    result <- Node.get_pending_transactions()
+  <- result
