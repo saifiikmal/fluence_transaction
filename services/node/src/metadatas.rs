@@ -27,3 +27,11 @@ impl Metadata {
         }
     }
 }
+
+#[marine]
+#[derive(Debug, Clone)]
+pub struct FinalMetadata {
+    pub public_key: String,
+    pub alias: String,
+    pub content: String,
+}
