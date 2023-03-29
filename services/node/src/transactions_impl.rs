@@ -22,7 +22,7 @@ impl Storage {
                 timestamp INTEGER NOT NULL,
                 error_text TEXT NULL,
                 encryption_type TEXT NOT NULL,
-                service_id TEXT,
+                meta_contract_id TEXT,
                 method TEXT NOT NULL,
                 nonce INTEGER NOT NULL
             );",
@@ -46,7 +46,7 @@ impl Storage {
 
     pub fn write_transaction(&self, transaction: Transaction) -> Result<String, ServiceError> {
         let s = format!(
-            "insert into {} (hash, token_key, from_peer_id, host_id, status, data_key, data, public_key, alias, timestamp, encryption_type,service_id, method, error_text, nonce) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
+            "insert into {} (hash, token_key, from_peer_id, host_id, status, data_key, data, public_key, alias, timestamp, encryption_type,meta_contract_id, method, error_text, nonce) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
             TRANSACTIONS_TABLE_NAME,
             transaction.hash,
             transaction.token_key,
@@ -59,7 +59,7 @@ impl Storage {
             transaction.alias,
             transaction.timestamp,
             transaction.encryption_type,
-            transaction.service_id,
+            transaction.meta_contract_id,
             transaction.method,
             transaction.error_text,
             transaction.nonce
@@ -135,7 +135,7 @@ pub fn read(statement: &Statement) -> Result<Transaction, ServiceError> {
         timestamp: statement.read::<i64>(9)? as u64,
         error_text: statement.read::<String>(10)?,
         encryption_type: statement.read::<String>(11)?,
-        service_id: statement.read::<String>(12)?,
+        meta_contract_id: statement.read::<String>(12)?,
         method: statement.read::<String>(13)?,
         nonce: statement.read::<i64>(14)?,
     })

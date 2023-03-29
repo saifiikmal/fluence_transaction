@@ -204,7 +204,7 @@ pub fn bind_meta_contract(transaction_hash: String) {
                 error = Some(InvalidOwner(f!("{transaction.public_key}")))
             } else {
                 current_meta_contract = contract;
-                current_meta_contract.service_id = transaction.data.clone();
+                current_meta_contract.meta_contract_id = transaction.data.clone();
             }
             is_update = true;
         }
@@ -218,7 +218,7 @@ pub fn bind_meta_contract(transaction_hash: String) {
         if !is_update {
             current_meta_contract = MetaContract {
                 token_key: transaction.token_key.clone(),
-                service_id: transaction.service_id.clone(),
+                meta_contract_id: transaction.meta_contract_id.clone(),
                 public_key: transaction.public_key.clone(),
             };
 

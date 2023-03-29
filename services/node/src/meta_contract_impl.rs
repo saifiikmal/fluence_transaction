@@ -10,7 +10,7 @@ impl Storage {
             "
             CREATE TABLE IF NOT EXISTS {} (
                 token_key varchar(255) not null primary key,
-                service_id varchar(255) null,
+                meta_contract_id varchar(255) null,
                 public_key varchar(255) null
             );",
             META_CONTRACT_TABLE_NAME
@@ -37,8 +37,11 @@ impl Storage {
      */
     pub fn write_meta_contract(&self, contract: MetaContract) -> Result<(), ServiceError> {
         let s = format!(
-            "insert into {} (token_key, service_id, public_key) values ('{}', '{}', '{}');",
-            META_CONTRACT_TABLE_NAME, contract.token_key, contract.service_id, contract.public_key
+            "insert into {} (token_key, meta_contract_id, public_key) values ('{}', '{}', '{}');",
+            META_CONTRACT_TABLE_NAME,
+            contract.token_key,
+            contract.meta_contract_id,
+            contract.public_key
         );
 
         self.connection.execute(s)?;
@@ -81,7 +84,7 @@ impl Storage {
 pub fn read(statement: &Statement) -> Result<MetaContract, ServiceError> {
     Ok(MetaContract {
         token_key: statement.read::<String>(0)?,
-        service_id: statement.read::<String>(1)?,
+        meta_contract_id: statement.read::<String>(1)?,
         public_key: statement.read::<String>(2)?,
     })
 }

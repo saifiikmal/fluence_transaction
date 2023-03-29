@@ -18,7 +18,7 @@ pub struct Transaction {
     pub alias: String,
     pub timestamp: u64,
     pub encryption_type: String,
-    pub service_id: String,
+    pub meta_contract_id: String,
     pub method: String,
     pub error_text: String,
 }
@@ -42,7 +42,7 @@ impl Transaction {
         alias: String,
         timestamp: u64,
         encryption_type: String,
-        service_id: String,
+        meta_contract_id: String,
         method: String,
     ) -> Self {
         let hash = Self::generate_hash(
@@ -55,7 +55,7 @@ impl Transaction {
             public_key.clone(),
             alias.clone(),
             encryption_type.clone(),
-            service_id.clone(),
+            meta_contract_id.clone(),
             method.clone(),
         );
 
@@ -72,7 +72,7 @@ impl Transaction {
             alias,
             timestamp,
             encryption_type,
-            service_id,
+            meta_contract_id,
             method,
             error_text: "".to_string(),
         }
