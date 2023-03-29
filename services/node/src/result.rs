@@ -88,6 +88,31 @@ impl From<Result<Metadata, ServiceError>> for FdbMetadataResult {
 
 #[marine]
 #[derive(Debug)]
+pub struct FdbMetadatasResult {
+    pub success: bool,
+    pub err_msg: String,
+    pub metadatas: Vec<Metadata>,
+}
+
+impl From<Result<Vec<Metadata>, ServiceError>> for FdbMetadatasResult {
+    fn from(result: Result<Vec<Metadata>, ServiceError>) -> Self {
+        match result {
+            Ok(metadatas) => Self {
+                success: true,
+                err_msg: "".to_string(),
+                metadatas,
+            },
+            Err(err) => Self {
+                success: false,
+                err_msg: err.to_string(),
+                metadatas: Vec::new(),
+            },
+        }
+    }
+}
+
+#[marine]
+#[derive(Debug)]
 pub struct FdbMetaContractResult {
     pub success: bool,
     pub err_msg: String,

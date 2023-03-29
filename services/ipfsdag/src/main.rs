@@ -6,6 +6,7 @@ use marine_rs_sdk::marine;
 use marine_rs_sdk::module_manifest;
 use marine_rs_sdk::MountedBinaryResult;
 use marine_rs_sdk::WasmLoggerBuilder;
+use serde_json::Value;
 use types::{IpfsDagGetResult, IpfsDagPutResult};
 
 use block::serialize;
@@ -71,9 +72,7 @@ pub fn put_block(
         t = timeout_sec;
     }
 
-    log::info!("{:?} {:?} {:?}", content, previous_cid, transaction);
-
-    let block = serialize(content, previous_cid.clone(), transaction.clone());
+    let block = serialize(content.clone(), previous_cid.clone(), transaction.clone());
 
     let input;
 
@@ -98,6 +97,19 @@ pub fn put_block(
     unwrap_mounted_binary_result(bash(cmd))
         .map(|res| res.trim().to_string())
         .into()
+}
+
+fn is_string_json(content: &str) -> bool {
+    let result = serde_json::to_string(content);
+
+    match result {
+        Ok(_) => {
+            return true;
+        }
+        Err(_) => {
+            return false;
+        }
+    }
 }
 
 #[marine]

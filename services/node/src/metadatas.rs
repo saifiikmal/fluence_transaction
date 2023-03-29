@@ -34,4 +34,5 @@ pub struct FinalMetadata {
     pub public_key: String,
     pub alias: String,
     pub content: String,
+    pub enc: String,
 }

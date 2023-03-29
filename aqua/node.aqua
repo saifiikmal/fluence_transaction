@@ -22,6 +22,11 @@ data FdbMetadataResult:
   err_msg: string
   metadata: Metadata
 
+data FdbMetadatasResult:
+  success: bool
+  err_msg: string
+  metadatas: []Metadata
+
 data FdbResult:
   transaction_hash: string
 
@@ -56,11 +61,13 @@ data FinalMetadata:
   public_key: string
   alias: string
   content: string
+  enc: string
 
 service Node("node"):
   bind_meta_contract(transaction_hash: string)  
   get_meta_contract(token_key: string) -> FdbMetaContractResult
   get_metadata(data_key: string, public_key: string) -> FdbMetadataResult
+  get_metadatas(data_key: string) -> FdbMetadatasResult
   get_pending_transactions() -> FdbTransactionsResult
   get_transaction(hash: string) -> FdbTransactionResult
   send_transaction(data_key: string, token_key: string, alias: string, public_key: string, signature: string, data: string, enc: string, method: string, nonce: i64) -> FdbResult

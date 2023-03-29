@@ -23,7 +23,9 @@ use error::ServiceError::{
 };
 use meta_contract::MetaContract;
 use metadatas::{FinalMetadata, Metadata};
-use result::{FdbMetaContractResult, FdbTransactionResult, FdbTransactionsResult};
+use result::{
+    FdbMetaContractResult, FdbMetadatasResult, FdbTransactionResult, FdbTransactionsResult,
+};
 use result::{FdbMetadataResult, FdbResult};
 use std::time::{SystemTime, UNIX_EPOCH};
 use storage_impl::get_storage;
@@ -169,6 +171,11 @@ pub fn get_metadata(data_key: String, public_key: String) -> FdbMetadataResult {
 }
 
 #[marine]
+pub fn get_metadatas(data_key: String) -> FdbMetadatasResult {
+    wrapped_try(|| get_storage()?.get_metadata_by_datakey(data_key)).into()
+}
+
+#[marine]
 pub fn get_meta_contract(token_key: String) -> FdbMetaContractResult {
     wrapped_try(|| get_storage()?.get_meta_contract(token_key)).into()
 }
@@ -268,8 +275,6 @@ pub fn set_metadata(
                 data.public_key.clone(),
             );
 
-            log::info!("{:?}", data);
-
             match result {
                 Ok(metadata) => {
                     transaction.status = STATUS_SUCCESS;
@@ -299,8 +304,6 @@ pub fn set_metadata(
 
                     let tx_serde = serde_json::to_string(&tx).unwrap();
 
-                    log::info!("{:?}", data.content);
-
                     let result_ipfs_dag_put =
                         put_block(data.content, "".to_string(), tx_serde, "".to_string(), 0);
                     let content_cid = result_ipfs_dag_put.cid;
@@ -310,7 +313,7 @@ pub fn set_metadata(
                         data.alias.clone(),
                         content_cid,
                         data.public_key.clone(),
-                        transaction.encryption_type.clone(),
+                        data.enc.clone(),
                     );
 
                     let _ = storage.write_metadata(metadata);
@@ -323,8 +326,11 @@ pub fn set_metadata(
         }
     }
 
-    // update transaction
-    let _ = storage.write_transaction(transaction);
+    let _ = storage.update_transaction_status(
+        transaction.hash.clone(),
+        transaction.status.clone(),
+        transaction.error_text.clone(),
+    );
 }
 
 /************************ *********************/

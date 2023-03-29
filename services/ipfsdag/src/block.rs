@@ -16,15 +16,16 @@ pub fn serialize(content: String, previous_cid: String, transaction: String) -> 
 
     let milliseconds = timestamp.as_millis();
 
-    log::info!("{}", content);
+    let content_value = match serde_json::from_str(&content) {
+        Ok(value) => value,
+        Err(_) => Value::String(content.clone()),
+    };
 
-    let obj = serde_json::from_str(&content).unwrap();
     let tx = serde_json::from_str(&transaction).unwrap();
-    log::info!("{}", obj);
 
     let data = Block {
         timestamp: milliseconds as u64,
-        content: obj,
+        content: content_value,
         previous: serde_json::json!({ "/": previous_cid }),
         transaction: tx,
     };

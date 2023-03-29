@@ -10,11 +10,13 @@ impl Storage {
         let table_schema = format!(
             "
             CREATE TABLE IF NOT EXISTS {} (
-                data_key TEXT not null primary key unique,
-                alias varchar(255) not null,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                data_key TEXT not null,
+                alias varchar(255),
                 cid TEXT null,
                 public_key TEXT not null,
-                enc TEXT not null
+                enc TEXT not null,
+                UNIQUE(data_key, public_key, alias)
             );",
             METADATAS_TABLE_NAME
         );
@@ -51,9 +53,15 @@ impl Storage {
 
         log::info!("{}", s);
 
-        self.connection.execute(s)?;
-
-        Ok(())
+        let result = self.connection.execute(s);
+        match result {
+            Ok(_) => return Ok(()),
+            Err(error) => {
+                log::info!("{:?}", error);
+                return Ok(());
+            }
+        }
+        // Ok(())
     }
 
     pub fn update_cid(
@@ -93,29 +101,29 @@ impl Storage {
         }
     }
 
-    // pub fn get_transactions_by_datakey(&self, data_key: String) -> Result<Vec<Transaction>, ServiceError> {
-    //     let mut statement =
-    //         self.connection
-    //             .prepare(f!("SELECT * FROM {METADATAS_TABLE_NAME} WHERE data_key = ?"))?;
+    pub fn get_metadata_by_datakey(&self, data_key: String) -> Result<Vec<Metadata>, ServiceError> {
+        let mut statement = self.connection.prepare(f!(
+            "SELECT * FROM {METADATAS_TABLE_NAME} WHERE data_key = ?"
+        ))?;
 
-    //     statement.bind(1, &Value::String(data_key))?;
+        statement.bind(1, &Value::String(data_key.clone()))?;
 
-    //     let mut result = vec![];
+        let mut metadatas = vec![];
 
-    //     while let State::Row = statement.next()? {
-    //         result.push(read(&statement)?)
-    //     }
+        while let State::Row = statement.next()? {
+            metadatas.push(read(&statement)?);
+        }
 
-    //     Ok(result)
-    // }
+        Ok(metadatas)
+    }
 }
 
 pub fn read(statement: &Statement) -> Result<Metadata, ServiceError> {
     Ok(Metadata {
-        data_key: statement.read::<String>(0)?,
-        alias: statement.read::<String>(1)?,
-        cid: statement.read::<String>(2)?,
-        public_key: statement.read::<String>(3)?,
-        enc: statement.read::<String>(4)?,
+        data_key: statement.read::<String>(1)?,
+        alias: statement.read::<String>(2)?,
+        cid: statement.read::<String>(3)?,
+        public_key: statement.read::<String>(4)?,
+        enc: statement.read::<String>(5)?,
     })
 }
