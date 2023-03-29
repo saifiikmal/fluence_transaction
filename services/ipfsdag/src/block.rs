@@ -16,6 +16,8 @@ pub fn serialize(content: String, previous_cid: String, transaction: String) -> 
 
     let milliseconds = timestamp.as_millis();
 
+    log::info!("{}", content);
+
     let obj = serde_json::from_str(&content).unwrap();
     let tx = serde_json::from_str(&transaction).unwrap();
     log::info!("{}", obj);

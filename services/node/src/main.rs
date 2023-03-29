@@ -22,7 +22,7 @@ use error::ServiceError::{
     NotSupportedEncryptionType,
 };
 use meta_contract::MetaContract;
-use metadatas::Metadata;
+use metadatas::{FinalMetadata, Metadata};
 use result::{FdbMetaContractResult, FdbTransactionResult, FdbTransactionsResult};
 use result::{FdbMetadataResult, FdbResult};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -243,51 +243,12 @@ pub fn bind_meta_contract(transaction_hash: String) {
 }
 
 // *********** VALIDATOR *****************
-
-// #[marine]
-// pub fn create_metadata(
-//     transaction_hash: String,
-//     on_create_result: bool,
-//     on_create_metadata: String,
-//     on_create_error_msg: String,
-// ) {
-//     let storage = get_storage().expect("Internal error to database connector");
-//     let mut transaction = storage.get_transaction(transaction_hash).unwrap();
-
-//     if !on_create_result {
-//         transaction.status = STATUS_FAILED;
-//         transaction.error_text = on_create_error_msg;
-//     } else {
-//         let mut content_cid = "".to_string();
-
-//         if !on_create_metadata.is_empty() {
-//             let result = put(on_create_metadata, "".to_string(), "".to_string(), 0);
-//             content_cid = result.cid
-//         }
-
-//         let metadata = Metadata::new(
-//             transaction.data_key.clone(),
-//             transaction.alias.clone(),
-//             content_cid,
-//             transaction.public_key.clone(),
-//             transaction.encryption_type.clone(),
-//         );
-
-//         let _ = storage.write_metadata(metadata);
-
-//         transaction.status = STATUS_SUCCESS;
-//     }
-
-//     // update transaction
-//     let _ = storage.write_transaction(transaction);
-// }
-
 #[marine]
 pub fn set_metadata(
     transaction_hash: String,
     meta_contract_id: String,
     on_metacontract_result: bool,
-    final_metadata: String,
+    metadatas: Vec<FinalMetadata>,
     final_error_msg: String,
 ) {
     let storage = get_storage().expect("Internal error to database connector");
@@ -301,59 +262,65 @@ pub fn set_metadata(
             transaction.error_text = final_error_msg;
         }
     } else {
-        let result = storage.get_owner_metadata_by_datakey(
-            transaction.data_key.clone(),
-            transaction.public_key.clone(),
-        );
+        for data in metadatas {
+            let result = storage.get_owner_metadata_by_datakey(
+                transaction.data_key.clone(),
+                data.public_key.clone(),
+            );
 
-        match result {
-            Ok(metadata) => {
-                transaction.status = STATUS_SUCCESS;
+            log::info!("{:?}", data);
 
-                let tx = TransactionSubset {
-                    hash: transaction.hash.clone(),
-                    timestamp: transaction.timestamp.clone(),
-                    meta_contract_id: meta_contract_id.clone(),
-                };
+            match result {
+                Ok(metadata) => {
+                    transaction.status = STATUS_SUCCESS;
 
-                let tx_serde = serde_json::to_string(&tx).unwrap();
+                    let tx = TransactionSubset {
+                        hash: transaction.hash.clone(),
+                        timestamp: transaction.timestamp.clone(),
+                        meta_contract_id: meta_contract_id.clone(),
+                    };
 
-                let result_ipfs_dag_put =
-                    put_block(final_metadata, metadata.cid, tx_serde, "".to_string(), 0);
-                let content_cid = result_ipfs_dag_put.cid;
+                    let tx_serde = serde_json::to_string(&tx).unwrap();
 
-                let _ = storage.update_cid(metadata.data_key, metadata.public_key, content_cid);
-            }
-            Err(ServiceError::RecordNotFound(_)) => {
-                transaction.status = STATUS_SUCCESS;
+                    let result_ipfs_dag_put =
+                        put_block(data.content, metadata.cid, tx_serde, "".to_string(), 0);
+                    let content_cid = result_ipfs_dag_put.cid;
 
-                let tx = TransactionSubset {
-                    hash: transaction.hash.clone(),
-                    timestamp: transaction.timestamp.clone(),
-                    meta_contract_id: meta_contract_id.clone(),
-                };
+                    let _ = storage.update_cid(metadata.data_key, metadata.public_key, content_cid);
+                }
+                Err(ServiceError::RecordNotFound(_)) => {
+                    transaction.status = STATUS_SUCCESS;
 
-                let tx_serde = serde_json::to_string(&tx).unwrap();
+                    let tx = TransactionSubset {
+                        hash: transaction.hash.clone(),
+                        timestamp: transaction.timestamp.clone(),
+                        meta_contract_id: meta_contract_id.clone(),
+                    };
 
-                let result_ipfs_dag_put =
-                    put_block(final_metadata, "".to_string(), tx_serde, "".to_string(), 0);
-                let content_cid = result_ipfs_dag_put.cid;
+                    let tx_serde = serde_json::to_string(&tx).unwrap();
 
-                let metadata = Metadata::new(
-                    transaction.data_key.clone(),
-                    transaction.alias.clone(),
-                    content_cid,
-                    transaction.public_key.clone(),
-                    transaction.encryption_type.clone(),
-                );
+                    log::info!("{:?}", data.content);
 
-                let _ = storage.write_metadata(metadata);
-            }
-            Err(e) => {
-                transaction.error_text = e.to_string();
-                transaction.status = STATUS_FAILED;
-            }
-        };
+                    let result_ipfs_dag_put =
+                        put_block(data.content, "".to_string(), tx_serde, "".to_string(), 0);
+                    let content_cid = result_ipfs_dag_put.cid;
+
+                    let metadata = Metadata::new(
+                        transaction.data_key.clone(),
+                        data.alias.clone(),
+                        content_cid,
+                        data.public_key.clone(),
+                        transaction.encryption_type.clone(),
+                    );
+
+                    let _ = storage.write_metadata(metadata);
+                }
+                Err(e) => {
+                    transaction.error_text = e.to_string();
+                    transaction.status = STATUS_FAILED;
+                }
+            };
+        }
     }
 
     // update transaction
