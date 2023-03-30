@@ -2,7 +2,7 @@ module Node declares *
 
 data MetaContract:
   token_key: string
-  service_id: string
+  meta_contract_id: string
   public_key: string
 
 data FdbMetaContractResult:
@@ -15,7 +15,6 @@ data Metadata:
   alias: string
   cid: string
   public_key: string
-  enc: string
 
 data FdbMetadataResult:
   success: bool
@@ -42,10 +41,10 @@ data Transaction:
   public_key: string
   alias: string
   timestamp: u64
-  encryption_type: string
-  service_id: string
+  meta_contract_id: string
   method: string
   error_text: string
+  token_id: string
 
 data FdbTransactionResult:
   success: bool
@@ -61,7 +60,6 @@ data FinalMetadata:
   public_key: string
   alias: string
   content: string
-  enc: string
 
 service Node("node"):
   bind_meta_contract(transaction_hash: string)  
@@ -70,5 +68,5 @@ service Node("node"):
   get_metadatas(data_key: string) -> FdbMetadatasResult
   get_pending_transactions() -> FdbTransactionsResult
   get_transaction(hash: string) -> FdbTransactionResult
-  send_transaction(data_key: string, token_key: string, alias: string, public_key: string, signature: string, data: string, enc: string, method: string, nonce: i64) -> FdbResult
+  send_transaction(data_key: string, token_key: string, token_id: string, alias: string, public_key: string, signature: string, data: string, method: string, nonce: i64) -> FdbResult
   set_metadata(transaction_hash: string, meta_contract_id: string, on_metacontract_result: bool, metadatas: []FinalMetadata, final_error_msg: string)  

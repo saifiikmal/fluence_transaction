@@ -7,23 +7,15 @@ pub struct Metadata {
     pub alias: String,
     pub cid: String,
     pub public_key: String,
-    pub enc: String,
 }
 
 impl Metadata {
-    pub fn new(
-        data_key: String,
-        alias: String,
-        cid: String,
-        public_key: String,
-        enc: String,
-    ) -> Self {
+    pub fn new(data_key: String, alias: String, cid: String, public_key: String) -> Self {
         Self {
             data_key,
             alias,
             cid,
             public_key,
-            enc,
         }
     }
 }
@@ -34,5 +26,4 @@ pub struct FinalMetadata {
     pub public_key: String,
     pub alias: String,
     pub content: String,
-    pub enc: String,
 }

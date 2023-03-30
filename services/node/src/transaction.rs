@@ -17,10 +17,10 @@ pub struct Transaction {
     pub public_key: String,
     pub alias: String,
     pub timestamp: u64,
-    pub encryption_type: String,
     pub meta_contract_id: String,
     pub method: String,
     pub error_text: String,
+    pub token_id: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -41,9 +41,9 @@ impl Transaction {
         public_key: String,
         alias: String,
         timestamp: u64,
-        encryption_type: String,
         meta_contract_id: String,
         method: String,
+        token_id: String,
     ) -> Self {
         let hash = Self::generate_hash(
             token_key.clone(),
@@ -54,9 +54,9 @@ impl Transaction {
             nonce.clone(),
             public_key.clone(),
             alias.clone(),
-            encryption_type.clone(),
             meta_contract_id.clone(),
             method.clone(),
+            token_id.clone(),
         );
 
         Self {
@@ -71,10 +71,10 @@ impl Transaction {
             public_key,
             alias,
             timestamp,
-            encryption_type,
             meta_contract_id,
             method,
             error_text: "".to_string(),
+            token_id,
         }
     }
 
@@ -87,9 +87,9 @@ impl Transaction {
         nonce: i64,
         public_key: String,
         alias: String,
-        encryption_type: String,
         service_id: String,
         method: String,
+        token_id: String,
     ) -> String {
         let mut hasher = Sha256::new();
         hasher.update(
@@ -103,9 +103,9 @@ impl Transaction {
                 data,
                 public_key,
                 alias,
-                encryption_type,
                 service_id,
-                method
+                method,
+                token_id
             )
             .as_bytes(),
         );

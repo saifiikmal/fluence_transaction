@@ -15,6 +15,8 @@ pub enum ServiceError {
     RecordNotFound(String),
     #[error("Invalid signature: {0}")]
     InvalidSignature(String),
+    #[error("Invalid encryption key: {0}")]
+    InvalidEncryption(String),
     #[error["Invalid method: {0}"]]
     InvalidMethod(String),
     #[error["Invalid owner: {0}"]]

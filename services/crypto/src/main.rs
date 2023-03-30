@@ -64,3 +64,12 @@ pub fn sign(message: String, private_key: String) -> String {
 
     base64::encode(signature)
 }
+
+#[marine]
+pub fn get_public_key_type(public_key: &str) -> String {
+    if &public_key[..2] == "0x" {
+        return "secp256k1".to_string();
+    } else {
+        return "ed25519".to_string();
+    }
+}

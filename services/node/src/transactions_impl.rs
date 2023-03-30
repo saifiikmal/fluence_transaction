@@ -10,7 +10,7 @@ impl Storage {
         let table_schema = format!(
             "
             CREATE TABLE IF NOT EXISTS {} (
-                hash TEXT PRIMARY KEY,
+                hash TEXT PRIMARY KEY UNIQUE,
                 token_key TEXT NOT NULL,
                 data_key TEXT NOT NULL,
                 from_peer_id TEXT NOT NULL,
@@ -21,10 +21,10 @@ impl Storage {
                 alias TEXT,
                 timestamp INTEGER NOT NULL,
                 error_text TEXT NULL,
-                encryption_type TEXT NOT NULL,
                 meta_contract_id TEXT,
                 method TEXT NOT NULL,
-                nonce INTEGER NOT NULL
+                nonce INTEGER NOT NULL,
+                token_id TEXT
             );",
             TRANSACTIONS_TABLE_NAME
         );
@@ -46,10 +46,11 @@ impl Storage {
 
     pub fn write_transaction(&self, transaction: Transaction) -> Result<String, ServiceError> {
         let s = format!(
-            "insert into {} (hash, token_key, from_peer_id, host_id, status, data_key, data, public_key, alias, timestamp, encryption_type,meta_contract_id, method, error_text, nonce) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
+            "insert into {} (hash, token_key, token_id, from_peer_id, host_id, status, data_key, data, public_key, alias, timestamp,meta_contract_id, method, error_text, nonce) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
             TRANSACTIONS_TABLE_NAME,
             transaction.hash,
             transaction.token_key,
+            transaction.token_id,
             transaction.from_peer_id,
             transaction.host_id,
             transaction.status,
@@ -58,7 +59,6 @@ impl Storage {
             transaction.public_key,
             transaction.alias,
             transaction.timestamp,
-            transaction.encryption_type,
             transaction.meta_contract_id,
             transaction.method,
             transaction.error_text,
@@ -134,9 +134,9 @@ pub fn read(statement: &Statement) -> Result<Transaction, ServiceError> {
         alias: statement.read::<String>(8)?,
         timestamp: statement.read::<i64>(9)? as u64,
         error_text: statement.read::<String>(10)?,
-        encryption_type: statement.read::<String>(11)?,
-        meta_contract_id: statement.read::<String>(12)?,
-        method: statement.read::<String>(13)?,
-        nonce: statement.read::<i64>(14)?,
+        meta_contract_id: statement.read::<String>(11)?,
+        method: statement.read::<String>(12)?,
+        nonce: statement.read::<i64>(13)?,
+        token_id: statement.read::<String>(14)?,
     })
 }

@@ -1,8 +1,14 @@
 module MetaContract declares *
 
+data FinalMetadata:
+  public_key: string
+  alias: string
+  content: string
+  enc: string
+
 data MetaContractResult:
   result: bool
-  metadatas: string
+  metadatas: []FinalMetadata
   error_string: string
 
 service MetaContract("meta-contract"):

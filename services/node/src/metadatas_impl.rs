@@ -15,7 +15,6 @@ impl Storage {
                 alias varchar(255),
                 cid TEXT null,
                 public_key TEXT not null,
-                enc TEXT not null,
                 UNIQUE(data_key, public_key, alias)
             );",
             METADATAS_TABLE_NAME
@@ -42,13 +41,12 @@ impl Storage {
      */
     pub fn write_metadata(&self, metadata: Metadata) -> Result<(), ServiceError> {
         let s = format!(
-            "insert into {} (data_key, alias, cid, public_key, enc) values ('{}', '{}', '{}', '{}', '{}');",
+            "insert into {} (data_key, alias, cid, public_key) values ('{}', '{}', '{}', '{}');",
             METADATAS_TABLE_NAME,
             metadata.data_key,
             metadata.alias,
             metadata.cid,
-            metadata.public_key,
-            metadata.enc
+            metadata.public_key
         );
 
         log::info!("{}", s);
@@ -124,6 +122,5 @@ pub fn read(statement: &Statement) -> Result<Metadata, ServiceError> {
         alias: statement.read::<String>(2)?,
         cid: statement.read::<String>(3)?,
         public_key: statement.read::<String>(4)?,
-        enc: statement.read::<String>(5)?,
     })
 }

@@ -60,23 +60,27 @@ pub fn main() {
 pub fn send_transaction(
     data_key: String,
     token_key: String,
+    token_id: String,
     alias: String,
     public_key: String,
     signature: String,
     data: String,
-    enc: String,
     method: String,
     nonce: i64,
 ) -> FdbResult {
     let mut service_id = "".to_string();
     let mut error: Option<ServiceError> = None;
-    let mut enc_verify = "".to_string();
     let storage = get_storage().expect("Database non existance");
 
     if error.is_none() {
         if method != METHOD_CONTRACT && method != METHOD_METADATA {
             error = Some(InvalidMethod(f!("invalid method: {method}")));
         }
+    }
+
+    let enc_verify = get_public_key_type(public_key.clone().as_str());
+    if enc_verify.len() <= 0 {
+        error = Some(ServiceError::InvalidEncryption(public_key.clone()));
     }
 
     if error.is_none() {
@@ -88,16 +92,11 @@ pub fn send_transaction(
                     if metadata.public_key != public_key {
                         error = Some(InvalidOwner(f!("not owner of data_key: {public_key}")));
                     }
-
-                    enc_verify = metadata.enc;
                 }
-                Err(ServiceError::RecordNotFound(_)) => {
-                    enc_verify = enc.clone();
-                }
+                Err(ServiceError::RecordNotFound(_)) => {}
                 Err(e) => error = Some(e),
             }
         } else if method == METHOD_CONTRACT {
-            enc_verify = enc.clone();
             service_id = data.clone();
         }
     }
@@ -142,9 +141,9 @@ pub fn send_transaction(
         public_key,
         alias,
         timestamp.as_millis() as u64,
-        enc_verify,
         service_id,
         method,
+        token_id,
     );
 
     if !error.is_none() {
@@ -313,7 +312,6 @@ pub fn set_metadata(
                         data.alias.clone(),
                         content_cid,
                         data.public_key.clone(),
-                        data.enc.clone(),
                     );
 
                     let _ = storage.write_metadata(metadata);
@@ -355,4 +353,7 @@ extern "C" {
 extern "C" {
     #[link_name = "verify"]
     pub fn verify(public_key: String, signature: String, message: String, enc: String) -> bool;
+
+    #[link_name = "get_public_key_type"]
+    pub fn get_public_key_type(public_key: &str) -> String;
 }
