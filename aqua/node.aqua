@@ -64,7 +64,7 @@ data FinalMetadata:
 service Node("node"):
   bind_meta_contract(transaction_hash: string)  
   get_meta_contract(token_key: string) -> FdbMetaContractResult
-  get_metadata(data_key: string, public_key: string) -> FdbMetadataResult
+  get_metadata(data_key: string, public_key: string, alias: string) -> FdbMetadataResult
   get_metadatas(data_key: string) -> FdbMetadatasResult
   get_pending_transactions() -> FdbTransactionsResult
   get_transaction(hash: string) -> FdbTransactionResult

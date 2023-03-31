@@ -1,22 +1,24 @@
 import "node.aqua"
 import "meta-contract.aqua"
 
-const NODE_SERVICE_ID = "1c073cf6-3027-45aa-a7c6-e89675c5949d"
+const NODE_SERVICE_ID = "3c4024c2-8f6c-4cdb-857c-c18a71c88068"
+const CONTRACT_SERVICE_ID = "8755a3a2-7e91-4e9e-8885-53955e927ebe"
 
 func validateTransaction(hash: string):
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    result <- Node.get_transaction(hash)
+    tx <- Node.get_transaction(hash)
 
-    if result.transaction.method == "contract":
+    if tx.transaction.method == "contract":
       Node.bind_meta_contract(hash)
     
-    if result.transaction.method == "metadata":
-      fdbMetaContractResult <- Node.get_meta_contract(result.transaction.token_key)
-      if fdbMetaContractResult.success:
-        MetaContract fdbMetaContractResult.meta.meta_contract_id
-        metaContractResult <- MetaContract.on_execute(result.transaction.data)
-        Node.set_metadata(hash, fdbMetaContractResult.meta.meta_contract_id, metaContractResult.result, metaContractResult.metadatas, metaContractResult.error_string)
+    if tx.transaction.method == "metadata":
+      metaContract <- Node.get_meta_contract(tx.transaction.token_key)
+      if metaContract.success:
+        metadatasResult <- Node.get_metadatas(tx.transaction.data_key)
+        MetaContract metaContract.meta.meta_contract_id
+        metaContractResult <- MetaContract.on_execute(metaContract.meta, metadatasResult.metadatas, tx.transaction)
+        Node.set_metadata(hash, metaContract.meta.meta_contract_id, metaContractResult.result, metaContractResult.metadatas, metaContractResult.error_string)
 
 func getPendingTransactions_3600():
   on HOST_PEER_ID:
@@ -26,19 +28,3 @@ func getPendingTransactions_3600():
     if result.success:
       for tx <- result.transactions:
         validateTransaction(tx.hash)
-
-func new_transaction_metadata(count: i64):
-  on HOST_PEER_ID:
-    Node NODE_SERVICE_ID
-    Node.send_transaction("1", "11", "", "0xce2f68c1cfea8748f56032f7601ee04715e165c0", "0x460ab768ca58c7c6f16b5ea59c699a90d9619f3c80702f942e9b4027550b5d3b1b50e1aa15ca808f0465820b6fe307cd711ef97804def6640abf48e75456ed9c1b", "{\"hello\":\"is me\"}", "secp256k1", "metadata", count)
-
-func new_transaction_contract(count: i64):
-  on HOST_PEER_ID:
-    Node NODE_SERVICE_ID
-    Node.send_transaction("1", "11", "", "0xce2f68c1cfea8748f56032f7601ee04715e165c0", "0xe20747d50f42a4a69ff90fa53783ddb84215a51f547a5fe7720f054971669ee74e3c28cbdb914502524e84c700892ba016a00c645582959c16c3085c5babab951c", "a2650c29-f649-487e-96e6-38303830e633", "secp256k1", "contract", count)
-
-func pending_txs() -> FdbTransactionsResult:
-  on HOST_PEER_ID:
-    Node NODE_SERVICE_ID
-    result <- Node.get_pending_transactions()
-  <- result

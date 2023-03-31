@@ -1,10 +1,16 @@
 module MetaContract declares *
 
+import "node.aqua"
+
 data FinalMetadata:
   public_key: string
   alias: string
   content: string
-  enc: string
+
+data MetaContract:
+  token_key: string
+  meta_contract_id: string
+  public_key: string
 
 data MetaContractResult:
   result: bool
@@ -12,4 +18,4 @@ data MetaContractResult:
   error_string: string
 
 service MetaContract("meta-contract"):
-  on_execute(content: string) -> MetaContractResult
+  on_execute(contract: MetaContract, metadatas: []Metadata, transaction: Transaction) -> MetaContractResult
