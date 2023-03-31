@@ -85,8 +85,11 @@ pub fn send_transaction(
 
     if error.is_none() {
         if method == METHOD_METADATA {
-            let result =
-                storage.get_owner_metadata_by_datakey(data_key.clone(), public_key.clone());
+            let result = storage.get_owner_metadata_by_datakey_and_alias(
+                data_key.clone(),
+                public_key.clone(),
+                alias.clone(),
+            );
             match result {
                 Ok(metadata) => {
                     if metadata.public_key != public_key {
@@ -165,8 +168,11 @@ pub fn get_transaction(hash: String) -> FdbTransactionResult {
 }
 
 #[marine]
-pub fn get_metadata(data_key: String, public_key: String) -> FdbMetadataResult {
-    wrapped_try(|| get_storage()?.get_owner_metadata_by_datakey(data_key, public_key)).into()
+pub fn get_metadata(data_key: String, public_key: String, alias: String) -> FdbMetadataResult {
+    wrapped_try(|| {
+        get_storage()?.get_owner_metadata_by_datakey_and_alias(data_key, public_key, alias)
+    })
+    .into()
 }
 
 #[marine]
@@ -269,9 +275,10 @@ pub fn set_metadata(
         }
     } else {
         for data in metadatas {
-            let result = storage.get_owner_metadata_by_datakey(
+            let result = storage.get_owner_metadata_by_datakey_and_alias(
                 transaction.data_key.clone(),
                 data.public_key.clone(),
+                data.alias.clone(),
             );
 
             match result {

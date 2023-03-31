@@ -80,17 +80,19 @@ impl Storage {
         Ok(())
     }
 
-    pub fn get_owner_metadata_by_datakey(
+    pub fn get_owner_metadata_by_datakey_and_alias(
         &self,
         data_key: String,
         public_key: String,
+        alias: String,
     ) -> Result<Metadata, ServiceError> {
         let mut statement = self.connection.prepare(f!(
-            "SELECT * FROM {METADATAS_TABLE_NAME} WHERE data_key = ? AND public_key = ?"
+            "SELECT * FROM {METADATAS_TABLE_NAME} WHERE data_key = ? AND public_key = ? AND alias = ?"
         ))?;
 
         statement.bind(1, &Value::String(data_key.clone()))?;
         statement.bind(2, &Value::String(public_key.clone()))?;
+        statement.bind(3, &Value::String(alias.clone()))?;
 
         if let State::Row = statement.next()? {
             read(&statement)
