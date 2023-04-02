@@ -52,15 +52,15 @@ impl Storage {
     pub fn rebind_meta_contract(
         &self,
         token_key: String,
-        service_id: String,
+        meta_contract_id: String,
     ) -> Result<(), ServiceError> {
         self.connection.execute(format!(
             "
           update {}
-          set service_id = '{}'
+          set meta_contract_id = '{}'
           where token_key = '{}';
           ",
-            META_CONTRACT_TABLE_NAME, service_id, token_key
+            META_CONTRACT_TABLE_NAME, meta_contract_id, token_key
         ))?;
 
         Ok(())

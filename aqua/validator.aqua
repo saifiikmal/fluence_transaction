@@ -1,7 +1,7 @@
 import "node.aqua"
 import "meta-contract.aqua"
 
-const NODE_SERVICE_ID = "3c4024c2-8f6c-4cdb-857c-c18a71c88068"
+const NODE_SERVICE_ID = "transaction"
 const CONTRACT_SERVICE_ID = "8755a3a2-7e91-4e9e-8885-53955e927ebe"
 
 func validateTransaction(hash: string):
@@ -28,3 +28,20 @@ func getPendingTransactions_3600():
     if result.success:
       for tx <- result.transactions:
         validateTransaction(tx.hash)
+
+func new_transaction_metadata(msg: string, count: i64):
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    Node.send_transaction("1", "11", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0x9239334cca0d0c7e4eb424fa4604f2c3f6d16c34b466f27ddad0a00fd4f11b581fecf9dc82f6e20e14a2977dcf80d1b72dcbb6592b46977f72afb976e34f9d7e1b", msg, "metadata", count)
+
+func new_transaction_contract(count: i64) -> FdbResult:
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    rst <- Node.send_transaction("1", "11", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0x6e4142c604e08a9d52f957221b09c40ee703c257c3a18ddf697c9ed57766265a7f84dfb8ee54f0d45c4451a69347a17a2ed9da1aad389fa2d5c5eab6fe7614fc1c", "a2650c29-f649-487e-96e6-38303830e633", "contract", count)
+  <- rst
+
+func pending_txs() -> FdbTransactionsResult:
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    result <- Node.get_pending_transactions()
+  <- result

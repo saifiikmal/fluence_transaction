@@ -1,0 +1,13 @@
+{
+"name": "ipfsdag",
+"mounted_binaries":
+{
+  "ipfs": "/usr/bin/ipfs",
+  "bash": "/usr/bin/bash"
+},
+"envs": {
+  "/tmp/vault": "./tmp"
+},
+"max_heap_size": "8 MiB",
+"logger_enabled": true
+}

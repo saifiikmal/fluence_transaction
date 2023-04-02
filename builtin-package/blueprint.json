@@ -1,0 +1,9 @@
+{
+  "name": "transaction",
+  "dependencies": [
+    "name:crypto",
+    "name:ipfsdag",
+    "name:sqlite3",
+    "name:node"
+  ]
+}
