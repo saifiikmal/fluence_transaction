@@ -113,6 +113,34 @@ impl From<Result<Vec<Metadata>, ServiceError>> for FdbMetadatasResult {
 
 #[marine]
 #[derive(Debug)]
+pub struct FdbMetadataHistoryResult {
+    pub success: bool,
+    pub err_msg: String,
+    pub metadata: String,
+    pub history: Vec<String>,
+}
+
+impl From<Result<Vec<String>, ServiceError>> for FdbMetadataHistoryResult {
+    fn from(result: Result<Vec<String>, ServiceError>) -> Self {
+        match result {
+            Ok(metadatas) => Self {
+                success: true,
+                err_msg: "".to_string(),
+                metadata: metadatas[0].clone(),
+                history: metadatas[1..].to_vec(),
+            },
+            Err(err) => Self {
+                success: false,
+                err_msg: err.to_string(),
+                metadata: "{}".to_string(),
+                history: Vec::new(),
+            },
+        }
+    }
+}
+
+#[marine]
+#[derive(Debug)]
 pub struct FdbMetaContractResult {
     pub success: bool,
     pub err_msg: String,

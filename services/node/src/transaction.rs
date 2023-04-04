@@ -87,7 +87,7 @@ impl Transaction {
         nonce: i64,
         public_key: String,
         alias: String,
-        service_id: String,
+        meta_contract_id: String,
         method: String,
         token_id: String,
     ) -> String {
@@ -103,7 +103,7 @@ impl Transaction {
                 data,
                 public_key,
                 alias,
-                service_id,
+                meta_contract_id,
                 method,
                 token_id
             )

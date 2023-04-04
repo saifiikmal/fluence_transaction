@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Block {
     pub timestamp: u64,
     pub content: Value,
@@ -33,6 +33,6 @@ pub fn serialize(content: String, previous_cid: String, transaction: String) -> 
     data
 }
 
-pub fn deserialize(json: &String) -> Block {
+pub fn deserialize(json: &str) -> Block {
     serde_json::from_str(json).unwrap()
 }

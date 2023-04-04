@@ -24,9 +24,11 @@ use error::ServiceError::{
 use meta_contract::MetaContract;
 use metadatas::{FinalMetadata, Metadata};
 use result::{
-    FdbMetaContractResult, FdbMetadatasResult, FdbTransactionResult, FdbTransactionsResult,
+    FdbMetaContractResult, FdbMetadataHistoryResult, FdbMetadatasResult, FdbTransactionResult,
+    FdbTransactionsResult,
 };
 use result::{FdbMetadataResult, FdbResult};
+use serde_json::Value;
 use std::time::{SystemTime, UNIX_EPOCH};
 use storage_impl::get_storage;
 use transaction::{Transaction, TransactionSubset};
@@ -68,7 +70,7 @@ pub fn send_transaction(
     method: String,
     nonce: i64,
 ) -> FdbResult {
-    let mut service_id = "".to_string();
+    let mut meta_contract_id = "".to_string();
     let mut error: Option<ServiceError> = None;
     let storage = get_storage().expect("Database non existance");
 
@@ -90,6 +92,9 @@ pub fn send_transaction(
                 public_key.clone(),
                 alias.clone(),
             );
+
+            log::info!("{:?}", result);
+
             match result {
                 Ok(metadata) => {
                     if metadata.public_key != public_key {
@@ -100,7 +105,7 @@ pub fn send_transaction(
                 Err(e) => error = Some(e),
             }
         } else if method == METHOD_CONTRACT {
-            service_id = data.clone();
+            meta_contract_id = data.clone();
         }
     }
 
@@ -144,7 +149,7 @@ pub fn send_transaction(
         public_key,
         alias,
         timestamp.as_millis() as u64,
-        service_id,
+        meta_contract_id,
         method,
         token_id,
     );
@@ -190,6 +195,53 @@ pub fn get_pending_transactions() -> FdbTransactionsResult {
     wrapped_try(|| get_storage()?.get_pending_transactions()).into()
 }
 
+#[marine]
+pub fn get_metadata_with_history(
+    data_key: String,
+    public_key: String,
+    alias: String,
+) -> FdbMetadataHistoryResult {
+    wrapped_try(|| {
+        let storage = get_storage().expect("Internal error to database connector");
+
+        let result = storage.get_owner_metadata_by_datakey_and_alias(data_key, public_key, alias);
+
+        let metadata;
+        let mut metadatas: Vec<String> = Vec::new();
+
+        match result {
+            Ok(m) => {
+                metadata = m;
+            }
+            Err(e) => return Err(e),
+        };
+
+        let mut read_metadata_cid: String = metadata.cid.clone();
+
+        while read_metadata_cid.len() > 0 {
+            let result = get(read_metadata_cid.clone(), "".to_string(), 0);
+            let val: Value = serde_json::from_str(&result.block).unwrap();
+
+            let input = format!(r#"{}"#, val);
+            metadatas.push(input);
+
+            let previous_cid = val
+                .get("previous")
+                .and_then(|v| v.get("/"))
+                .and_then(|v| v.as_str());
+
+            if previous_cid.is_none() {
+                break;
+            } else {
+                read_metadata_cid = previous_cid.unwrap().to_string();
+            }
+        }
+
+        Ok(metadatas)
+    })
+    .into()
+}
+
 // *********** SMART CONTRACT *****************
 #[marine]
 pub fn bind_meta_contract(transaction_hash: String) {
@@ -229,8 +281,10 @@ pub fn bind_meta_contract(transaction_hash: String) {
 
             meta_result = storage.write_meta_contract(current_meta_contract);
         } else {
-            meta_result = storage
-                .rebind_meta_contract(transaction.token_key.clone(), transaction.meta_contract_id.clone());
+            meta_result = storage.rebind_meta_contract(
+                transaction.token_key.clone(),
+                transaction.meta_contract_id.clone(),
+            );
         }
 
         match meta_result {
@@ -280,6 +334,8 @@ pub fn set_metadata(
                 data.public_key.clone(),
                 data.alias.clone(),
             );
+
+            log::info!("{:?}", result);
 
             match result {
                 Ok(metadata) => {
