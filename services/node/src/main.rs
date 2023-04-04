@@ -70,7 +70,7 @@ pub fn send_transaction(
     method: String,
     nonce: i64,
 ) -> FdbResult {
-    let mut service_id = "".to_string();
+    let mut meta_contract_id = "".to_string();
     let mut error: Option<ServiceError> = None;
     let storage = get_storage().expect("Database non existance");
 
@@ -105,7 +105,7 @@ pub fn send_transaction(
                 Err(e) => error = Some(e),
             }
         } else if method == METHOD_CONTRACT {
-            service_id = data.clone();
+            meta_contract_id = data.clone();
         }
     }
 
@@ -149,7 +149,7 @@ pub fn send_transaction(
         public_key,
         alias,
         timestamp.as_millis() as u64,
-        service_id,
+        meta_contract_id,
         method,
         token_id,
     );
@@ -281,8 +281,10 @@ pub fn bind_meta_contract(transaction_hash: String) {
 
             meta_result = storage.write_meta_contract(current_meta_contract);
         } else {
-            meta_result = storage
-                .rebind_meta_contract(transaction.token_key.clone(), transaction.data.clone());
+            meta_result = storage.rebind_meta_contract(
+                transaction.token_key.clone(),
+                transaction.meta_contract_id.clone(),
+            );
         }
 
         match meta_result {

@@ -1,0 +1,29 @@
+module Node.Scheduled declares *
+
+export getPendingTransactions_5
+
+import "node.aqua"
+import "meta-contract.aqua"
+
+func validateTransaction(hash: string):
+  on HOST_PEER_ID:
+    tx <- Node.get_transaction(hash)
+
+    if tx.transaction.method == "contract":
+      Node.bind_meta_contract(hash)
+    
+    if tx.transaction.method == "metadata":
+      metaContract <- Node.get_meta_contract(tx.transaction.token_key)
+      if metaContract.success:
+        metadatasResult <- Node.get_metadatas(tx.transaction.data_key)
+        MetaContract metaContract.meta.meta_contract_id
+        metaContractResult <- MetaContract.on_execute(metaContract.meta, metadatasResult.metadatas, tx.transaction)
+        Node.set_metadata(hash, metaContract.meta.meta_contract_id, metaContractResult.result, metaContractResult.metadatas, metaContractResult.error_string)
+
+func getPendingTransactions_5():
+  on HOST_PEER_ID:
+    result <- Node.get_pending_transactions()
+
+    if result.success:
+      for tx <- result.transactions:
+        validateTransaction(tx.hash)
