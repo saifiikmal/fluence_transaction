@@ -31,21 +31,21 @@ impl From<Result<String>> for IpfsDagPutResult {
 pub struct IpfsDagGetResult {
     pub success: bool,
     pub error: String,
-    pub content: String,
+    pub block: String,
 }
 
 impl From<Result<String>> for IpfsDagGetResult {
     fn from(result: Result<String>) -> Self {
         match result {
-            Ok(content) => Self {
+            Ok(block) => Self {
                 success: true,
                 error: "".to_string(),
-                content,
+                block,
             },
             Err(err) => Self {
                 success: false,
                 error: err.to_string(),
-                content: "".to_string(),
+                block: "".to_string(),
             },
         }
     }

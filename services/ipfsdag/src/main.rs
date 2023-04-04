@@ -6,10 +6,9 @@ use marine_rs_sdk::marine;
 use marine_rs_sdk::module_manifest;
 use marine_rs_sdk::MountedBinaryResult;
 use marine_rs_sdk::WasmLoggerBuilder;
-use serde_json::Value;
 use types::{IpfsDagGetResult, IpfsDagPutResult};
 
-use block::serialize;
+use block::{deserialize, serialize};
 use eyre::Result;
 
 const DEFAULT_TIMEOUT_SEC: u64 = 1u64;
@@ -97,19 +96,6 @@ pub fn put_block(
     unwrap_mounted_binary_result(bash(cmd))
         .map(|res| res.trim().to_string())
         .into()
-}
-
-fn is_string_json(content: &str) -> bool {
-    let result = serde_json::to_string(content);
-
-    match result {
-        Ok(_) => {
-            return true;
-        }
-        Err(_) => {
-            return false;
-        }
-    }
 }
 
 #[marine]

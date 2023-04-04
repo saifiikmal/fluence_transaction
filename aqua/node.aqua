@@ -10,6 +10,12 @@ data FdbMetaContractResult:
   err_msg: string
   meta: MetaContract
 
+data FdbMetadataHistoryResult:
+  success: bool
+  err_msg: string
+  metadata: string
+  history: []string
+
 data Metadata:
   data_key: string
   alias: string
@@ -65,6 +71,7 @@ service Node("node"):
   bind_meta_contract(transaction_hash: string)  
   get_meta_contract(token_key: string) -> FdbMetaContractResult
   get_metadata(data_key: string, public_key: string, alias: string) -> FdbMetadataResult
+  get_metadata_with_history(data_key: string, public_key: string, alias: string) -> FdbMetadataHistoryResult
   get_metadatas(data_key: string) -> FdbMetadatasResult
   get_pending_transactions() -> FdbTransactionsResult
   get_transaction(hash: string) -> FdbTransactionResult

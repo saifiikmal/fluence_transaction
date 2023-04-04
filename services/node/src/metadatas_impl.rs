@@ -86,18 +86,18 @@ impl Storage {
         public_key: String,
         alias: String,
     ) -> Result<Metadata, ServiceError> {
-        let mut statement = self.connection.prepare(f!(
-            "SELECT * FROM {METADATAS_TABLE_NAME} WHERE data_key = ? AND public_key = ? AND alias = ?"
-        ))?;
-
-        statement.bind(1, &Value::String(data_key.clone()))?;
-        statement.bind(2, &Value::String(public_key.clone()))?;
-        statement.bind(3, &Value::String(alias.clone()))?;
+        let mut statement = self
+            .connection
+            .prepare(format!(
+                "SELECT * FROM {} WHERE data_key = '{}' AND public_key = '{}' AND alias = '{}'",
+                METADATAS_TABLE_NAME, data_key, public_key, alias
+            ))
+            .unwrap();
 
         if let State::Row = statement.next()? {
             read(&statement)
         } else {
-            Err(RecordNotFound(f!("{data_key}")))
+            Err(RecordNotFound(f!("{data_key}-{public_key}-{alias}")))
         }
     }
 
