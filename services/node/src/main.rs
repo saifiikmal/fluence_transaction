@@ -230,7 +230,7 @@ pub fn bind_meta_contract(transaction_hash: String) {
             meta_result = storage.write_meta_contract(current_meta_contract);
         } else {
             meta_result = storage
-                .rebind_meta_contract(transaction.token_key.clone(), transaction.data.clone());
+                .rebind_meta_contract(transaction.token_key.clone(), transaction.meta_contract_id.clone());
         }
 
         match meta_result {

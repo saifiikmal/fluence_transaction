@@ -1,0 +1,5 @@
+{
+  "name": "crypto",
+  "max_heap_size": "8 MiB",
+  "logger_enabled": true
+}
