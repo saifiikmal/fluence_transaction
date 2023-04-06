@@ -1,6 +1,6 @@
 #![allow(improper_ctypes)]
 
-mod data_types;
+pub mod cron;
 mod defaults;
 mod error;
 mod meta_contract;
@@ -13,7 +13,11 @@ mod transaction;
 pub mod transactions_impl;
 mod validators;
 
-use defaults::{ENCRYPTION_TYPE_ED25519, ENCRYPTION_TYPE_SECP256K1};
+use cron::SerdeCron;
+use defaults::{
+    CRON_ACTION_CREATE, CRON_STATUS_ACTIVE, CRON_STATUS_DISABLE, ENCRYPTION_TYPE_ED25519,
+    ENCRYPTION_TYPE_SECP256K1, METHOD_CRON,
+};
 use defaults::{METHOD_CLONE, METHOD_CONTRACT, METHOD_METADATA, STATUS_FAILED};
 use marine_rs_sdk::marine;
 use marine_rs_sdk::module_manifest;
@@ -26,8 +30,8 @@ use error::ServiceError::{
 
 use metadatas::FinalMetadata;
 use result::{
-    FdbMetaContractResult, FdbMetadataHistoryResult, FdbMetadatasResult, FdbTransactionResult,
-    FdbTransactionsResult,
+    FdbCronsResult, FdbMetaContractResult, FdbMetadataHistoryResult, FdbMetadatasResult,
+    FdbTransactionResult, FdbTransactionsResult,
 };
 use result::{FdbMetadataResult, FdbResult};
 use serde_json::Value;
@@ -56,9 +60,10 @@ pub fn main() {
         .unwrap();
 
     let storage = get_storage().unwrap();
-    storage.create_meta_contract_tables();
-    storage.create_transactions_tables();
-    storage.create_metadatas_tables();
+    storage.create_meta_contract_table();
+    storage.create_transactions_table();
+    storage.create_metadatas_table();
+    storage.create_cron_table()
 }
 
 #[marine]
@@ -114,8 +119,6 @@ pub fn send_transaction(
                 alias.clone(),
             );
 
-            log::info!("{:?}", old_metadata_result);
-
             match old_metadata_result {
                 Ok(_) => {}
                 Err(e) => error = Some(e),
@@ -127,12 +130,58 @@ pub fn send_transaction(
                 alias.clone(),
             );
 
-            log::info!("{:?}", new_metadata_result);
-
             match new_metadata_result {
                 Ok(_) => error = Some(RecordFound(data_key.clone())),
                 Err(ServiceError::RecordNotFound(_)) => {}
                 Err(e) => error = Some(e),
+            }
+        } else if method.clone() == METHOD_CRON {
+            let cron_result: Result<SerdeCron, serde_json::Error> = serde_json::from_str(&data);
+
+            match cron_result {
+                Ok(serde_cron) => {
+                    if serde_cron.action == CRON_ACTION_CREATE {
+                        if serde_cron.address.len() <= 0
+                            || serde_cron.chain.len() <= 0
+                            || serde_cron.topic.len() <= 0
+                            || serde_cron.token_type.len() <= 0
+                        {
+                            error =
+                                Some(ServiceError::InvalidDataFormatForMethodType(method.clone()))
+                        } else {
+                            let result = storage.search_cron(
+                                serde_cron.address.clone(),
+                                serde_cron.chain.clone(),
+                                serde_cron.topic.clone(),
+                            );
+
+                            match result {
+                                Ok(_) => {
+                                    error = Some(RecordFound(f!(
+                                    "{serde_cron.address} {serde_cron.chain} {serde_cron.topic}"
+                                )))
+                                }
+                                Err(ServiceError::RecordNotFound(_)) => {}
+                                Err(e) => error = Some(e),
+                            }
+                        }
+                    } else {
+                        if serde_cron.cron_id <= 0
+                            || (serde_cron.status != CRON_STATUS_ACTIVE
+                                || serde_cron.status != CRON_STATUS_DISABLE)
+                        {
+                            error =
+                                Some(ServiceError::InvalidDataFormatForMethodType(method.clone()))
+                        } else {
+                            let result = storage.get_cron_by_id(serde_cron.cron_id);
+                            match result {
+                                Ok(_) => {}
+                                Err(e) => error = Some(e),
+                            }
+                        }
+                    }
+                }
+                Err(e) => error = Some(ServiceError::InvalidDataFormatForMethodType(e.to_string())),
             }
         }
     }
@@ -220,6 +269,16 @@ pub fn get_meta_contract(token_key: String) -> FdbMetaContractResult {
 #[marine]
 pub fn get_pending_transactions() -> FdbTransactionsResult {
     wrapped_try(|| get_storage()?.get_pending_transactions()).into()
+}
+
+#[marine]
+pub fn get_active_crons() -> FdbCronsResult {
+    wrapped_try(|| get_storage()?.get_active_crons()).into()
+}
+
+#[marine]
+pub fn get_all_crons() -> FdbCronsResult {
+    wrapped_try(|| get_storage()?.get_all_crons()).into()
 }
 
 #[marine]

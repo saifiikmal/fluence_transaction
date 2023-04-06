@@ -1,3 +1,5 @@
+use crate::cron::{Cron, SerdeCron};
+use crate::defaults::CRON_ACTION_CREATE;
 use crate::metadatas::{FinalMetadata, Metadata};
 use crate::transaction::TransactionSubset;
 use crate::{defaults::STATUS_FAILED, defaults::STATUS_SUCCESS};
@@ -226,6 +228,38 @@ pub fn validate_clone(
 
         transaction.status = STATUS_SUCCESS;
     }
+
+    let _ = storage.update_transaction_status(
+        transaction.hash.clone(),
+        transaction.status.clone(),
+        transaction.error_text.clone(),
+    );
+}
+
+/**
+ * Validated "cron" method type
+ */
+pub fn validate_cron(transaction_hash: String, data: String) {
+    let storage = get_storage().expect("Internal error to database connector");
+    let mut transaction = storage.get_transaction(transaction_hash).unwrap().clone();
+
+    let serde_cron: SerdeCron = serde_json::from_str(&data).unwrap();
+
+    if serde_cron.action == CRON_ACTION_CREATE {
+        let cron = Cron::new(
+            serde_cron.address,
+            serde_cron.topic,
+            serde_cron.token_type,
+            serde_cron.chain,
+        );
+
+        let _ = storage.write_cron(cron);
+    } else {
+        let _ = storage.update_cron_status(serde_cron.cron_id, serde_cron.status);
+    }
+
+    transaction.status = STATUS_SUCCESS;
+    transaction.error_text = "".to_string();
 
     let _ = storage.update_transaction_status(
         transaction.hash.clone(),

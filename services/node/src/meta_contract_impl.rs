@@ -5,7 +5,7 @@ use crate::{defaults::META_CONTRACT_TABLE_NAME, meta_contract::MetaContract};
 use marine_sqlite_connector::{State, Statement, Value};
 
 impl Storage {
-    pub fn create_meta_contract_tables(&self) {
+    pub fn create_meta_contract_table(&self) {
         let table_schema = format!(
             "
             CREATE TABLE IF NOT EXISTS {} (

@@ -2,7 +2,8 @@ use eyre::Result;
 use marine_rs_sdk::marine;
 
 use crate::{
-    error::ServiceError, meta_contract::MetaContract, metadatas::Metadata, transaction::Transaction,
+    cron::Cron, error::ServiceError, meta_contract::MetaContract, metadatas::Metadata,
+    transaction::Transaction,
 };
 
 #[marine]
@@ -159,6 +160,31 @@ impl From<Result<MetaContract, ServiceError>> for FdbMetaContractResult {
                 success: false,
                 err_msg: err.to_string(),
                 meta: MetaContract::default(),
+            },
+        }
+    }
+}
+
+#[marine]
+#[derive(Debug)]
+pub struct FdbCronsResult {
+    pub success: bool,
+    pub err_msg: String,
+    pub crons: Vec<Cron>,
+}
+
+impl From<Result<Vec<Cron>, ServiceError>> for FdbCronsResult {
+    fn from(result: Result<Vec<Cron>, ServiceError>) -> Self {
+        match result {
+            Ok(crons) => Self {
+                success: true,
+                err_msg: "".to_string(),
+                crons,
+            },
+            Err(err) => Self {
+                success: false,
+                err_msg: err.to_string(),
+                crons: Vec::new(),
             },
         }
     }
