@@ -13,6 +13,8 @@ pub enum ServiceError {
     InternalError(String),
     #[error("Record not found: {0}")]
     RecordNotFound(String),
+    #[error("Record found: {0}")]
+    RecordFound(String),
     #[error("Invalid signature: {0}")]
     InvalidSignature(String),
     #[error("Invalid encryption key: {0}")]
@@ -25,4 +27,6 @@ pub enum ServiceError {
     NotSupportedEncryptionType(String),
     #[error["Does not specify encryption"]]
     NoEncryptionType(),
+    #[error["Invalid data format: {0}"]]
+    InvalidDataFormatForMethodType(String),
 }

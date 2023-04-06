@@ -28,6 +28,8 @@ pub struct TransactionSubset {
     pub hash: String,
     pub timestamp: u64,
     pub meta_contract_id: String,
+    pub method: String,
+    pub value: String,
 }
 
 impl Transaction {

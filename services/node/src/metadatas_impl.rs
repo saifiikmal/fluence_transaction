@@ -97,7 +97,7 @@ impl Storage {
         if let State::Row = statement.next()? {
             read(&statement)
         } else {
-            Err(RecordNotFound(f!("{data_key}-{public_key}-{alias}")))
+            Err(RecordNotFound(f!("{data_key}#{public_key}#{alias}")))
         }
     }
 
