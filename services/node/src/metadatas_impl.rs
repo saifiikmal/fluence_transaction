@@ -6,7 +6,7 @@ use crate::storage_impl::Storage;
 use marine_sqlite_connector::{State, Statement, Value};
 
 impl Storage {
-    pub fn create_metadatas_tables(&self) {
+    pub fn create_metadatas_table(&self) {
         let table_schema = format!(
             "
             CREATE TABLE IF NOT EXISTS {} (
@@ -59,7 +59,6 @@ impl Storage {
                 return Ok(());
             }
         }
-        // Ok(())
     }
 
     pub fn update_cid(
@@ -97,7 +96,7 @@ impl Storage {
         if let State::Row = statement.next()? {
             read(&statement)
         } else {
-            Err(RecordNotFound(f!("{data_key}-{public_key}-{alias}")))
+            Err(RecordNotFound(f!("{data_key}#{public_key}#{alias}")))
         }
     }
 

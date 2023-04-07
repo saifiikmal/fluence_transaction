@@ -6,7 +6,7 @@ use crate::transaction::Transaction;
 use marine_sqlite_connector::{State, Statement, Value};
 
 impl Storage {
-    pub fn create_transactions_tables(&self) {
+    pub fn create_transactions_table(&self) {
         let table_schema = format!(
             "
             CREATE TABLE IF NOT EXISTS {} (
@@ -65,9 +65,15 @@ impl Storage {
             transaction.nonce
         );
 
-        self.connection.execute(s)?;
+        let result = self.connection.execute(s);
 
-        Ok(transaction.hash)
+        match result {
+            Ok(_) => Ok(transaction.hash),
+            Err(e) => {
+                log::info!("{}", e.to_string());
+                Err(InternalError(e.to_string()))
+            }
+        }
     }
 
     pub fn update_transaction_status(

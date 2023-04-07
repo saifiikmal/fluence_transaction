@@ -1,5 +1,17 @@
 module Node declares *
 
+data Cron:
+  address: string
+  topic: string
+  token_type: string
+  chain: string
+  status: i64
+
+data FdbCronsResult:
+  success: bool
+  err_msg: string
+  crons: []Cron
+
 data MetaContract:
   token_key: string
   meta_contract_id: string
@@ -69,6 +81,8 @@ data FinalMetadata:
 
 service Node("node"):
   bind_meta_contract(transaction_hash: string)  
+  get_active_crons() -> FdbCronsResult
+  get_all_crons() -> FdbCronsResult
   get_meta_contract(token_key: string) -> FdbMetaContractResult
   get_metadata(data_key: string, public_key: string, alias: string) -> FdbMetadataResult
   get_metadata_with_history(data_key: string, public_key: string, alias: string) -> FdbMetadataHistoryResult
@@ -76,4 +90,5 @@ service Node("node"):
   get_pending_transactions() -> FdbTransactionsResult
   get_transaction(hash: string) -> FdbTransactionResult
   send_transaction(data_key: string, token_key: string, token_id: string, alias: string, public_key: string, signature: string, data: string, method: string, nonce: i64) -> FdbResult
+  set_clone(transaction_hash: string, meta_contract_id: string, on_metacontract_result: bool, data: string, final_error_msg: string)  
   set_metadata(transaction_hash: string, meta_contract_id: string, on_metacontract_result: bool, metadatas: []FinalMetadata, final_error_msg: string)  
