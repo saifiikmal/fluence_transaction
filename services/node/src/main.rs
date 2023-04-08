@@ -1,6 +1,8 @@
 #![allow(improper_ctypes)]
 
+mod block;
 pub mod cron;
+mod data_types;
 mod defaults;
 mod error;
 mod meta_contract;
@@ -14,6 +16,7 @@ pub mod transactions_impl;
 mod validators;
 
 use cron::SerdeCron;
+use data_types::DataTypeClone;
 use defaults::{
     CRON_ACTION_CREATE, CRON_STATUS_ACTIVE, CRON_STATUS_DISABLE, ENCRYPTION_TYPE_ED25519,
     ENCRYPTION_TYPE_SECP256K1, METHOD_CRON,
@@ -113,27 +116,39 @@ pub fn send_transaction(
         } else if method.clone() == METHOD_CONTRACT {
             meta_contract_id = data.clone();
         } else if method.clone() == METHOD_CLONE {
-            let old_metadata_result = storage.get_owner_metadata_by_datakey_and_alias(
-                data.clone(),
-                public_key.clone(),
-                alias.clone(),
-            );
+            let data_clone_result: Result<DataTypeClone, serde_json::Error> =
+                serde_json::from_str(&data.clone());
 
-            match old_metadata_result {
-                Ok(_) => {}
-                Err(e) => error = Some(e),
-            }
+            match data_clone_result {
+                Ok(data_clone) => {
+                    let origin_metadata_result = storage.get_owner_metadata_by_datakey_and_alias(
+                        data_clone.origin_data_key.clone(),
+                        data_clone.origin_public_key.clone(),
+                        data_clone.origin_alias.clone(),
+                    );
 
-            let new_metadata_result = storage.get_owner_metadata_by_datakey_and_alias(
-                data_key.clone(),
-                public_key.clone(),
-                alias.clone(),
-            );
+                    match origin_metadata_result {
+                        Ok(_) => {}
+                        Err(e) => error = Some(e),
+                    }
 
-            match new_metadata_result {
-                Ok(_) => error = Some(RecordFound(data_key.clone())),
-                Err(ServiceError::RecordNotFound(_)) => {}
-                Err(e) => error = Some(e),
+                    if error.is_none() {
+                        let new_metadata_result = storage.get_owner_metadata_by_datakey_and_alias(
+                            data_key.clone(),
+                            public_key.clone(),
+                            alias.clone(),
+                        );
+
+                        match new_metadata_result {
+                            Ok(_) => error = Some(RecordFound(data_key.clone())),
+                            Err(ServiceError::RecordNotFound(_)) => {}
+                            Err(e) => error = Some(e),
+                        }
+                    }
+                }
+                Err(_) => {
+                    error = Some(ServiceError::InvalidDataFormatForMethodType(method.clone()))
+                }
             }
         } else if method.clone() == METHOD_CRON {
             let cron_result: Result<SerdeCron, serde_json::Error> = serde_json::from_str(&data);
