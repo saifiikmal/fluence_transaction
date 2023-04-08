@@ -1,4 +1,6 @@
+use crate::block::Block;
 use crate::cron::{Cron, SerdeCron};
+use crate::data_types::DataTypeClone;
 use crate::defaults::CRON_ACTION_CREATE;
 use crate::metadatas::{FinalMetadata, Metadata};
 use crate::transaction::TransactionSubset;
@@ -6,7 +8,6 @@ use crate::{defaults::STATUS_FAILED, defaults::STATUS_SUCCESS};
 use crate::{error::ServiceError, error::ServiceError::*};
 use crate::{get, put_block};
 use crate::{meta_contract::MetaContract, storage_impl::get_storage};
-use serde_json::*;
 
 /**
  * Validated meta contract method type
@@ -168,12 +169,13 @@ pub fn validate_metadata(
 
 /**
  * Validated "clone" method type
+ * Fetch the origin metadata content from Block and clone it to the new metadata
  */
 pub fn validate_clone(
     transaction_hash: String,
     meta_contract_id: String,
     on_metacontract_result: bool,
-    from: String,
+    data: String,
     final_error_msg: String,
 ) {
     let storage = get_storage().expect("Internal error to database connector");
@@ -187,11 +189,13 @@ pub fn validate_clone(
             transaction.error_text = final_error_msg;
         }
     } else {
-        let old_metadata = storage
+        let data_clone: DataTypeClone = serde_json::from_str(&data.clone()).unwrap();
+
+        let origin_metadata = storage
             .get_owner_metadata_by_datakey_and_alias(
-                from.clone(),
-                transaction.public_key.clone(),
-                transaction.alias.clone(),
+                data_clone.origin_data_key.clone(),
+                data_clone.origin_public_key.clone(),
+                data_clone.origin_alias.clone(),
             )
             .unwrap();
 
@@ -200,27 +204,28 @@ pub fn validate_clone(
             timestamp: transaction.timestamp.clone(),
             meta_contract_id: meta_contract_id.clone(),
             method: transaction.method.clone(),
-            value: from,
+            value: serde_json::to_string(&data_clone).unwrap(),
         };
 
         let tx_serde = serde_json::to_string(&tx).unwrap();
 
-        let ipfs_get_result = get(old_metadata.cid, "".to_string(), 0);
+        let ipfs_get_result = get(origin_metadata.cid, "".to_string(), 0);
+
+        let block: Block = serde_json::from_str(&ipfs_get_result.block).unwrap();
+        let content = block.content;
 
         let result_ipfs_dag_put = put_block(
-            ipfs_get_result.block,
+            serde_json::to_string(&content).unwrap(),
             "".to_string(),
             tx_serde,
             "".to_string(),
             0,
         );
 
-        let content_cid = result_ipfs_dag_put.cid;
-
         let metadata = Metadata::new(
             transaction.data_key.clone(),
             transaction.alias.clone(),
-            content_cid,
+            result_ipfs_dag_put.cid,
             transaction.public_key.clone(),
         );
 
