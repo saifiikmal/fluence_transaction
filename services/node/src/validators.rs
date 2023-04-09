@@ -224,9 +224,9 @@ pub fn validate_clone(
 
         let metadata = Metadata::new(
             transaction.data_key.clone(),
-            transaction.alias.clone(),
+            origin_metadata.alias.clone(),
             result_ipfs_dag_put.cid,
-            transaction.public_key.clone(),
+            origin_metadata.public_key.clone(),
         );
 
         let _ = storage.write_metadata(metadata);

@@ -45,7 +45,7 @@ impl Storage {
             "
         CREATE TABLE IF NOT EXISTS {} (
           	cron_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            address varchar(255) not null primary key,
+            address varchar(255) not null,
             token_type varchar(255) not null,
             chain varchar(255) not null,
             topic TEXT null,

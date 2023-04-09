@@ -135,8 +135,8 @@ pub fn send_transaction(
                     if error.is_none() {
                         let new_metadata_result = storage.get_owner_metadata_by_datakey_and_alias(
                             data_key.clone(),
-                            public_key.clone(),
-                            alias.clone(),
+                            data_clone.origin_public_key.clone(),
+                            data_clone.origin_alias.clone(),
                         );
 
                         match new_metadata_result {
