@@ -1,10 +1,20 @@
 module Node.Scheduled declares *
 
-export getPendingTransactions_5
+export getPendingTransactions_5, getEventCron_30
 
 import "node.aqua"
 import "meta-contract.aqua"
+import "fevm_json_rpc.aqua"
 
+const ERC1155_ABI_URL = "https://ipfs.xfero.io/ipfs/QmSiZUtqkbEZPPFMN9ZihSbPskNxqkjBpAfB2NmwLv11N7?filename=CollaBeatNFT-abi.json"
+const ERC721_ABI_URL = "https://ipfs.xfero.io/ipfs/QmWmkDbQ9KA6yLR8C8TuavLwyk2g6TfHyixG5gwTRem3Nw?filename=ERC721_0x3Zero-abi.json"
+
+service MyOp("op"):
+  array_length(results: []string) -> i64
+
+service MyOp2("op"):
+  array_length(results: []EventLogParamResult) -> i64
+  
 func validateTransaction(hash: string):
   on HOST_PEER_ID:
     tx <- Node.get_transaction(hash)
@@ -19,6 +29,9 @@ func validateTransaction(hash: string):
         MetaContract metaContract.meta.meta_contract_id
         metaContractResult <- MetaContract.on_execute(metaContract.meta, metadatasResult.metadatas, tx.transaction)
         Node.set_metadata(hash, metaContract.meta.meta_contract_id, metaContractResult.result, metaContractResult.metadatas, metaContractResult.error_string)
+    
+    if tx.transaction.method == "cron":
+      Node.set_cron(hash, tx.transaction.data)
 
 func getPendingTransactions_5():
   on HOST_PEER_ID:
@@ -27,3 +40,40 @@ func getPendingTransactions_5():
     if result.success:
       for tx <- result.transactions:
         validateTransaction(tx.hash)
+
+func getEventCron_30():
+  on HOST_PEER_ID:
+    results <- Node.get_active_crons()
+
+    evm_logs: *[]EventLogParamResult
+    meta_contract_result: *MetaContractResult
+
+    if results.success:  
+      for result <- results.crons:
+        from_block = Node.get_cron_tx_latest_block(result.address, result.chain, result.topic)
+        from_block_hex = FevmJsonRpc.decimal_to_hex(from_block)
+        if result.token_type == "erc1155":
+          evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC1155_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
+        if result.token_type == "erc721":
+          evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC721_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
+
+        for log <- evm_logs:
+          datas: *EventLogParamResult
+
+          n <- MyOp2.array_length(log)
+          for llog <- log par:
+            log_data = Node.deserialize_fork(llog.data)
+            if log_data.data != "":
+              forks = FevmJsonRpc.decode_abi(["string", "string", "string"], log_data.data)
+
+              -- parsing Minted event log (data_key, ipfs_multiaddr, cid)
+              if MyOp.array_length(forks) == 3:
+                metaContract <- Node.get_meta_contract_by_id(result.meta_contract_id)
+                MetaContract metaContract.meta.meta_contract_id
+                meta_result <- MetaContract.on_mint(metaContract.meta, log_data.token_id, forks[1], forks[2])
+
+                if meta_result.result:
+                  Node.set_metadata_cron(forks[0], meta_result.result, meta_result.metadatas)
+                  Node.send_cron_tx(result.cron_id, forks[0], llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
+            datas <<- llog
+          join datas[n-1]

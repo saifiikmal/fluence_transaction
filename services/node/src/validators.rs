@@ -1,7 +1,7 @@
 use crate::block::Block;
 use crate::cron::{Cron, SerdeCron};
 use crate::data_types::DataTypeClone;
-use crate::defaults::CRON_ACTION_CREATE;
+use crate::defaults::{CRON_ACTION_CREATE, CRON_STATUS_ACTIVE};
 use crate::metadatas::{FinalMetadata, Metadata};
 use crate::transaction::TransactionSubset;
 use crate::{defaults::STATUS_FAILED, defaults::STATUS_SUCCESS};
@@ -168,6 +168,49 @@ pub fn validate_metadata(
 }
 
 /**
+ * Validated "metadata cron" method type
+ */
+pub fn validate_metadata_cron(
+  data_key: String,
+  on_metacontract_result: bool,
+  metadatas: Vec<FinalMetadata>,
+) {
+  let storage = get_storage().expect("Internal error to database connector");
+
+  if on_metacontract_result {
+      for data in metadatas {
+          let result = storage.get_owner_metadata_by_datakey_and_alias(
+              data_key.clone(),
+              data.public_key.clone(),
+              data.alias.clone(),
+          );
+
+          log::info!("{:?}", result);
+
+          match result {
+              Ok(_) => {}
+              Err(ServiceError::RecordNotFound(_)) => {
+
+                  let result_ipfs_dag_put =
+                      put_block(data.content, "".to_string(), "{}".to_string(), "".to_string(), 0);
+                  let content_cid = result_ipfs_dag_put.cid;
+
+                  let metadata = Metadata::new(
+                      data_key.clone(),
+                      data.alias.clone(),
+                      content_cid,
+                      data.public_key.clone(),
+                  );
+
+                  let _ = storage.write_metadata(metadata);
+              }
+              Err(_) => {}
+          };
+      }
+  }
+}
+
+/**
  * Validated "clone" method type
  * Fetch the origin metadata content from Block and clone it to the new metadata
  */
@@ -256,6 +299,9 @@ pub fn validate_cron(transaction_hash: String, data: String) {
             serde_cron.topic,
             serde_cron.token_type,
             serde_cron.chain,
+            CRON_STATUS_ACTIVE,
+            serde_cron.meta_contract_id,
+            serde_cron.node_url,
         );
 
         let _ = storage.write_cron(cron);

@@ -79,6 +79,20 @@ impl Storage {
             Err(RecordNotFound(f!("{token_key}")))
         }
     }
+
+    pub fn get_meta_contract_by_id(&self, meta_contract_id: String) -> Result<MetaContract, ServiceError> {
+      let mut statement = self.connection.prepare(f!(
+          "SELECT * FROM {META_CONTRACT_TABLE_NAME} WHERE meta_contract_id = ?"
+      ))?;
+
+      statement.bind(1, &Value::String(meta_contract_id.clone()))?;
+
+      if let State::Row = statement.next()? {
+          read(&statement)
+      } else {
+          Err(RecordNotFound(f!("{meta_contract_id}")))
+      }
+  }
 }
 
 pub fn read(statement: &Statement) -> Result<MetaContract, ServiceError> {

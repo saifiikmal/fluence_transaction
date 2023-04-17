@@ -13,13 +13,15 @@ mod result;
 mod storage_impl;
 mod transaction;
 pub mod transactions_impl;
+pub mod cron_tx;
 mod validators;
 
 use cron::SerdeCron;
-use data_types::DataTypeClone;
+use cron_tx::CronTx;
+use data_types::{DataTypeClone, DataTypeFork, SerdeDataTypeFork};
 use defaults::{
     CRON_ACTION_CREATE, CRON_STATUS_ACTIVE, CRON_STATUS_DISABLE, ENCRYPTION_TYPE_ED25519,
-    ENCRYPTION_TYPE_SECP256K1, METHOD_CRON,
+    ENCRYPTION_TYPE_SECP256K1, METHOD_CRON, STATUS_PENDING, STATUS_SUCCESS,
 };
 use defaults::{METHOD_CLONE, METHOD_CONTRACT, METHOD_METADATA, STATUS_FAILED};
 use marine_rs_sdk::marine;
@@ -35,6 +37,7 @@ use metadatas::FinalMetadata;
 use result::{
     FdbCronsResult, FdbMetaContractResult, FdbMetadataHistoryResult, FdbMetadatasResult,
     FdbTransactionResult, FdbTransactionsResult,
+    FdbCronTxsResult, FdbCronTxResult,
 };
 use result::{FdbMetadataResult, FdbResult};
 use serde_json::Value;
@@ -42,7 +45,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use storage_impl::get_storage;
 use transaction::Transaction;
 use types::{IpfsDagGetResult, IpfsDagPutResult};
-use validators::{validate_clone, validate_meta_contract, validate_metadata};
+use validators::{validate_clone, validate_meta_contract, validate_metadata, validate_metadata_cron, validate_cron};
 
 #[macro_use]
 extern crate fstrings;
@@ -66,7 +69,8 @@ pub fn main() {
     storage.create_meta_contract_table();
     storage.create_transactions_table();
     storage.create_metadatas_table();
-    storage.create_cron_table()
+    storage.create_cron_table();
+    storage.create_cron_tx_table();
 }
 
 #[marine]
@@ -86,7 +90,7 @@ pub fn send_transaction(
     let storage = get_storage().expect("Database non existance");
 
     if error.is_none() {
-        if method != METHOD_CONTRACT && method != METHOD_METADATA && method != METHOD_CLONE {
+        if method != METHOD_CONTRACT && method != METHOD_METADATA && method != METHOD_CLONE && method != METHOD_CRON {
             error = Some(InvalidMethod(f!("invalid method: {method}")));
         }
     }
@@ -183,7 +187,7 @@ pub fn send_transaction(
                     } else {
                         if serde_cron.cron_id <= 0
                             || (serde_cron.status != CRON_STATUS_ACTIVE
-                                || serde_cron.status != CRON_STATUS_DISABLE)
+                                && serde_cron.status != CRON_STATUS_DISABLE)
                         {
                             error =
                                 Some(ServiceError::InvalidDataFormatForMethodType(method.clone()))
@@ -259,6 +263,84 @@ pub fn send_transaction(
 }
 
 #[marine]
+pub fn send_cron_tx(
+  cron_id: i64,
+  data_key: String,
+  data: String,
+  tx_block_number: u64, 
+  tx_hash: String,
+  token_id: String,
+) -> FdbCronTxResult {
+  let mut error: Option<ServiceError> = None;
+  let mut success = true;
+  let mut proceed = false;
+  let mut err_msg = "".to_string();
+  let mut cron_tx = CronTx::default();
+  let storage = get_storage().expect("Database non existance");
+
+  let cron = storage.get_cron_by_id(cron_id);
+
+  match cron {
+      Ok(cron_data) => {
+
+        let logs = storage.get_cron_tx_by_tx_hash(
+            tx_hash.clone(), cron_data.clone().address, cron_data.clone().chain, cron_data.clone().topic);
+
+        match logs {
+          Ok(tx) => {
+            if tx.status == STATUS_FAILED {
+              proceed = true;
+            } else {
+              cron_tx = tx;
+            }
+          },
+          Err(ServiceError::RecordNotFound(_)) => {
+            proceed = true;
+          },
+          Err(e) => error = Some(e),
+        }
+
+        if proceed {
+          let now = SystemTime::now();
+          let timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+      
+          cron_tx = CronTx::new(
+            cron_data.address,
+            cron_data.topic,
+            cron_data.token_type,
+            cron_data.chain,
+            cron_data.meta_contract_id,
+            timestamp.as_millis() as u64,
+            tx_block_number,
+            tx_hash,
+            STATUS_SUCCESS,
+            data,
+            "".to_string(),
+            token_id,
+            data_key
+          );
+      
+          let _ = storage.write_cron_tx(cron_tx.clone());
+        }
+      },
+      Err(ServiceError::RecordNotFound(_)) => {}
+      Err(e) => error = Some(e),
+  }
+
+
+  if !error.is_none() {
+    success = false;
+    err_msg = error.unwrap().to_string();
+  }
+
+  FdbCronTxResult { 
+    success, 
+    err_msg, 
+    cron_tx, 
+  }
+}
+
+#[marine]
 pub fn get_transaction(hash: String) -> FdbTransactionResult {
     wrapped_try(|| get_storage()?.get_transaction(hash)).into()
 }
@@ -282,6 +364,11 @@ pub fn get_meta_contract(token_key: String) -> FdbMetaContractResult {
 }
 
 #[marine]
+pub fn get_meta_contract_by_id(meta_contract_id: String) -> FdbMetaContractResult {
+    wrapped_try(|| get_storage()?.get_meta_contract_by_id(meta_contract_id)).into()
+}
+
+#[marine]
 pub fn get_pending_transactions() -> FdbTransactionsResult {
     wrapped_try(|| get_storage()?.get_pending_transactions()).into()
 }
@@ -294,6 +381,48 @@ pub fn get_active_crons() -> FdbCronsResult {
 #[marine]
 pub fn get_all_crons() -> FdbCronsResult {
     wrapped_try(|| get_storage()?.get_all_crons()).into()
+}
+
+#[marine]
+pub fn get_all_cron_txs() -> FdbCronTxsResult {
+    wrapped_try(|| get_storage()?.get_all_cron_txs()).into()
+}
+
+#[marine]
+pub fn get_cron_tx_by_tx_hash(
+  tx_hash: String,
+  address: String,
+  chain: String,
+  topic: String,
+) -> FdbCronTxResult {
+  wrapped_try(|| get_storage()?.get_cron_tx_by_tx_hash(tx_hash, address, chain, topic)).into()
+}
+
+#[marine]
+pub fn search_cron_tx(
+  address: String,
+  chain: String,
+  topic: String,
+) -> FdbCronTxsResult {
+  wrapped_try(|| get_storage()?.search_cron_tx(address, chain, topic)).into()
+}
+
+#[marine]
+pub fn get_cron_tx_latest_block(
+  address: String,
+  chain: String,
+  topic: String,
+) -> u64 {
+  wrapped_try(|| {
+    let storage = get_storage().expect("Internal error to database connector");
+    let result = storage.get_cron_tx_latest_block(address, chain, topic);
+
+    match result {
+      Ok(log) => log.tx_block_number,
+      Err(ServiceError::RecordNotFound(_)) => 0,
+      Err(_) => 0,
+    }
+  }).into()
 }
 
 #[marine]
@@ -367,6 +496,19 @@ pub fn set_metadata(
 }
 
 #[marine]
+pub fn set_metadata_cron(
+    data_key: String,
+    on_metacontract_result: bool,
+    metadatas: Vec<FinalMetadata>,
+) {
+    validate_metadata_cron(
+        data_key,
+        on_metacontract_result,
+        metadatas,
+    );
+}
+
+#[marine]
 pub fn set_clone(
     transaction_hash: String,
     meta_contract_id: String,
@@ -381,6 +523,25 @@ pub fn set_clone(
         data,
         final_error_msg,
     );
+}
+
+#[marine]
+pub fn set_cron(
+  transaction_hash: String,
+  data: String,
+) {
+  validate_cron(
+    transaction_hash, 
+    data,
+  );
+}
+
+// *********** Deserializer *****************
+#[marine]
+pub fn deserialize_fork(data: String) -> DataTypeFork {
+    let result: SerdeDataTypeFork = serde_json::from_str(&data).unwrap_or_default();
+
+    DataTypeFork::from(result)
 }
 
 /************************ *********************/

@@ -1,8 +1,22 @@
 import "node.aqua"
 import "meta-contract.aqua"
+import "fevm_json_rpc.aqua"
 
 const NODE_SERVICE_ID = "transaction"
 const CONTRACT_SERVICE_ID = "8755a3a2-7e91-4e9e-8885-53955e927ebe"
+const ERC1155_ABI_URL = "https://ipfs.xfero.io/ipfs/QmSiZUtqkbEZPPFMN9ZihSbPskNxqkjBpAfB2NmwLv11N7?filename=CollaBeatNFT-abi.json"
+const ERC721_ABI_URL = "https://ipfs.io/ipfs/QmWmkDbQ9KA6yLR8C8TuavLwyk2g6TfHyixG5gwTRem3Nw?filename=ERC721_0x3Zero-abi.json"
+
+service MyOp("op"):
+  array_length(results: []string) -> i64
+
+service MyOp2("op"):
+  array_length(results: []EventLogParamResult) -> i64
+
+data EvmLogParam:
+  to: string
+  token_id: string
+  data: string
 
 func validateTransaction(hash: string):
   on HOST_PEER_ID:
@@ -19,6 +33,9 @@ func validateTransaction(hash: string):
         MetaContract metaContract.meta.meta_contract_id
         metaContractResult <- MetaContract.on_execute(metaContract.meta, metadatasResult.metadatas, tx.transaction)
         Node.set_metadata(hash, metaContract.meta.meta_contract_id, metaContractResult.result, metaContractResult.metadatas, metaContractResult.error_string)
+
+    if tx.transaction.method == "cron":
+      Node.set_cron(hash, tx.transaction.data)
 
 func getPendingTransactions_3600():
   on HOST_PEER_ID:
@@ -37,7 +54,13 @@ func new_transaction_metadata(msg: string, count: i64):
 func new_transaction_contract(count: i64) -> FdbResult:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    rst <- Node.send_transaction("1", "11", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0x6e4142c604e08a9d52f957221b09c40ee703c257c3a18ddf697c9ed57766265a7f84dfb8ee54f0d45c4451a69347a17a2ed9da1aad389fa2d5c5eab6fe7614fc1c", "a2650c29-f649-487e-96e6-38303830e633", "contract", count)
+    rst <- Node.send_transaction("", "11", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0x3932b67f71807c307ec346141d5f665e245cb308a4ca1c3d73f058348cc12e3113eb7d82c7827bd5b803bcb4c23bee3b7a6b177d26988705a994caa5678bd7bc1b", "45866fde-d3ed-4bf3-a04b-ef902ef595c0", "contract", count)
+  <- rst
+
+func new_transaction_cron(data: string, count: i64) -> FdbResult:
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    rst <- Node.send_transaction("", "", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0x4e6b05686a0385d0cab63a00e1350f7592d919ea43be0698a708633c8b5688c6647b1ff71aa72f46b7f68948887a3abdb22274dfa764fd7f4ac5c6f92dfa24e91c", data, "cron", count)
   <- rst
 
 func pending_txs() -> FdbTransactionsResult:
@@ -45,3 +68,62 @@ func pending_txs() -> FdbTransactionsResult:
     Node NODE_SERVICE_ID
     result <- Node.get_pending_transactions()
   <- result
+
+func processCron():
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    results <- Node.get_active_crons()
+
+    evm_logs: *[]EventLogParamResult
+    meta_contract_result: *MetaContractResult
+
+    if results.success:  
+      for result <- results.crons:
+        from_block = Node.get_cron_tx_latest_block(result.address, result.chain, result.topic)
+        from_block_hex = FevmJsonRpc.decimal_to_hex(from_block)
+        if result.token_type == "erc1155":
+          evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC1155_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
+        if result.token_type == "erc721":
+          evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC721_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
+
+        for log <- evm_logs:
+          datas: *EventLogParamResult
+
+          n <- MyOp2.array_length(log)
+          for llog <- log par:
+            log_data = Node.deserialize_fork(llog.data)
+            if log_data.data != "":
+              forks = FevmJsonRpc.decode_abi(["string", "string", "string"], log_data.data)
+
+              -- parsing Minted event log (data_key, ipfs_multiaddr, cid)
+              if MyOp.array_length(forks) == 3:
+                metaContract <- Node.get_meta_contract_by_id(result.meta_contract_id)
+                MetaContract metaContract.meta.meta_contract_id
+                meta_result <- MetaContract.on_mint(metaContract.meta, log_data.token_id, forks[1], forks[2])
+
+                if meta_result.result:
+                  Node.set_metadata_cron(forks[0], meta_result.result, meta_result.metadatas)
+                  Node.send_cron_tx(result.cron_id, forks[0], llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
+            datas <<- llog
+          join datas[n-1]
+
+func send_cron_tx(cron_id: i64) -> FdbCronTxResult:
+  
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+
+    result <- Node.send_cron_tx(cron_id, "123", "data", 0, "0x0", "1")
+  <- result
+
+func get_cron_tx_latest_block() -> u64:
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    result <- Node.get_cron_tx_latest_block("0x0B5EEE15C8E1432E5BFE25C7fB2741144fb4aA58", "80001", "0x957f358702a4cd1c866fb29aefe080a9a56303adf02d47a081a56707d2d30033")
+  <- result
+
+func get_all_cron_txs() -> FdbCronTxsResult:
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    result <- Node.get_all_cron_txs()
+  <- result
+      
