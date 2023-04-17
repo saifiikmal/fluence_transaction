@@ -11,31 +11,39 @@
     (seq
      (seq
       (seq
-       (call %init_peer_id% ("transaction" "get_transaction") [tx-0.$.hash!] tx-1)
+       (seq
+        (call %init_peer_id% ("transaction" "get_transaction") [tx-0.$.hash!] tx-1)
+        (xor
+         (match tx-1.$.transaction.method! "contract"
+          (call %init_peer_id% ("transaction" "bind_meta_contract") [tx-0.$.hash!])
+         )
+         (call %init_peer_id% ("op" "noop") [])
+        )
+       )
        (xor
-        (match tx-1.$.transaction.method! "contract"
-         (call %init_peer_id% ("transaction" "bind_meta_contract") [tx-0.$.hash!])
+        (match tx-1.$.transaction.method! "metadata"
+         (seq
+          (call %init_peer_id% ("transaction" "get_meta_contract") [tx-1.$.transaction.token_key!] metaContract)
+          (xor
+           (match metaContract.$.success! true
+            (seq
+             (seq
+              (call %init_peer_id% ("transaction" "get_metadatas") [tx-1.$.transaction.data_key!] metadatasResult)
+              (call %init_peer_id% (metaContract.$.meta.meta_contract_id! "on_execute") [metaContract.$.meta! metadatasResult.$.metadatas! tx-1.$.transaction!] metaContractResult)
+             )
+             (call %init_peer_id% ("transaction" "set_metadata") [tx-0.$.hash! metaContract.$.meta.meta_contract_id! metaContractResult.$.result! metaContractResult.$.metadatas! metaContractResult.$.error_string!])
+            )
+           )
+           (call %init_peer_id% ("op" "noop") [])
+          )
+         )
         )
         (call %init_peer_id% ("op" "noop") [])
        )
       )
       (xor
-       (match tx-1.$.transaction.method! "metadata"
-        (seq
-         (call %init_peer_id% ("transaction" "get_meta_contract") [tx-1.$.transaction.token_key!] metaContract)
-         (xor
-          (match metaContract.$.success! true
-           (seq
-            (seq
-             (call %init_peer_id% ("transaction" "get_metadatas") [tx-1.$.transaction.data_key!] metadatasResult)
-             (call %init_peer_id% (metaContract.$.meta.meta_contract_id! "on_execute") [metaContract.$.meta! metadatasResult.$.metadatas! tx-1.$.transaction!] metaContractResult)
-            )
-            (call %init_peer_id% ("transaction" "set_metadata") [tx-0.$.hash! metaContract.$.meta.meta_contract_id! metaContractResult.$.result! metaContractResult.$.metadatas! metaContractResult.$.error_string!])
-           )
-          )
-          (call %init_peer_id% ("op" "noop") [])
-         )
-        )
+       (match tx-1.$.transaction.method! "cron"
+        (call %init_peer_id% ("transaction" "set_cron") [tx-0.$.hash! tx-1.$.transaction.data!])
        )
        (call %init_peer_id% ("op" "noop") [])
       )

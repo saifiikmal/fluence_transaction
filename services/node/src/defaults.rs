@@ -3,6 +3,7 @@ pub static TRANSACTIONS_TABLE_NAME: &str = "transactions";
 pub static METADATAS_TABLE_NAME: &str = "metadatas";
 pub static META_CONTRACT_TABLE_NAME: &str = "metacontracts";
 pub static CRON_TABLE_NAME: &str = "cron";
+pub static CRON_TX_TABLE_NAME: &str = "cron_tx";
 // Transaction
 pub static STATUS_PENDING: i64 = 0;
 pub static STATUS_SUCCESS: i64 = 1;

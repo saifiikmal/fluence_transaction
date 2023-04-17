@@ -1,0 +1,74 @@
+module FevmJsonRpc declares *
+
+data DataLogParam:
+  name: string
+  kind: string
+  value: string
+
+data EventLogParamResult:
+  event_name: string
+  params: []DataLogParam
+  success: bool
+  error_msg: string
+  data: string
+  block_number: u64
+  transaction_hash: string
+
+data TxLog:
+  topics: []string
+  data: string
+  transaction_hash: string
+  block_number: u64
+
+data Tx:
+  block_hash: string
+  block_number: string
+  from: string
+  gas: string
+  gas_price: string
+  hash: string
+  input: string
+  nonce: string
+  to: string
+  transaction_index: string
+  value: string
+  logs: []TxLog
+
+data JsonRpcBlockResult:
+  jsonrpc: string
+  transactions: []Tx
+  error: string
+  id: u64
+
+data JsonRpcResult:
+  jsonrpc: string
+  result: string
+  error: string
+  id: u64
+
+data JsonRpcTransactionResult:
+  jsonrpc: string
+  transaction: Tx
+  error: string
+  id: u64
+
+data TxParam:
+  value_type: string
+  value: string
+
+service FevmJsonRpc("fevm_json_rpc"):
+  contract_view_call(node_url: string, abi_url: string, method_name: string, contract_address: string, tx_params: []TxParam) -> string
+  decimal_to_hex(decimal: u64) -> string
+  decode_abi(abi: []string, data: string) -> []string
+  decode_input_to_get_method_name(abi_url: string, input: string) -> string
+  decode_logs(abi_url: string, tx_log: TxLog) -> EventLogParamResult
+  eth_get_balance(url: string, add: string) -> JsonRpcResult
+  eth_get_block_by_number(url: string, block_in_hex: string) -> JsonRpcBlockResult
+  eth_get_latest_block_number(url: string) -> JsonRpcResult
+  eth_get_logs(url: string, abi_url: string, start_block_in_hex: string, end_block_in_hex: string, address: string, topics: []string) -> []EventLogParamResult
+  eth_get_transaction_receipt(url: string, trans_hash: string) -> JsonRpcTransactionResult
+  eth_send_raw_transaction(url: string, signed_tx: string) -> JsonRpcResult
+  hex_to_decimal(hex: string) -> u64
+  hex_to_string(hex: string) -> string
+  util_get_list_blocks_range(start: u64, end: u64) -> []u64
+  util_get_method_hash(input: string) -> string

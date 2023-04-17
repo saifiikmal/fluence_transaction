@@ -2,8 +2,9 @@ use eyre::Result;
 use marine_rs_sdk::marine;
 
 use crate::{
-    cron::Cron, error::ServiceError, meta_contract::MetaContract, metadatas::Metadata,
+    cron::{Cron, CronResult}, error::ServiceError, meta_contract::MetaContract, metadatas::Metadata,
     transaction::Transaction,
+    cron_tx::CronTx,
 };
 
 #[marine]
@@ -170,11 +171,11 @@ impl From<Result<MetaContract, ServiceError>> for FdbMetaContractResult {
 pub struct FdbCronsResult {
     pub success: bool,
     pub err_msg: String,
-    pub crons: Vec<Cron>,
+    pub crons: Vec<CronResult>,
 }
 
-impl From<Result<Vec<Cron>, ServiceError>> for FdbCronsResult {
-    fn from(result: Result<Vec<Cron>, ServiceError>) -> Self {
+impl From<Result<Vec<CronResult>, ServiceError>> for FdbCronsResult {
+    fn from(result: Result<Vec<CronResult>, ServiceError>) -> Self {
         match result {
             Ok(crons) => Self {
                 success: true,
@@ -185,6 +186,56 @@ impl From<Result<Vec<Cron>, ServiceError>> for FdbCronsResult {
                 success: false,
                 err_msg: err.to_string(),
                 crons: Vec::new(),
+            },
+        }
+    }
+}
+
+#[marine]
+#[derive(Debug)]
+pub struct FdbCronTxsResult {
+    pub success: bool,
+    pub err_msg: String,
+    pub cron_txs: Vec<CronTx>,
+}
+
+impl From<Result<Vec<CronTx>, ServiceError>> for FdbCronTxsResult {
+    fn from(result: Result<Vec<CronTx>, ServiceError>) -> Self {
+        match result {
+            Ok(cron_txs) => Self {
+                success: true,
+                err_msg: "".to_string(),
+                cron_txs,
+            },
+            Err(err) => Self {
+                success: false,
+                err_msg: err.to_string(),
+                cron_txs: Vec::new(),
+            },
+        }
+    }
+}
+
+#[marine]
+#[derive(Debug)]
+pub struct FdbCronTxResult {
+    pub success: bool,
+    pub err_msg: String,
+    pub cron_tx: CronTx,
+}
+
+impl From<Result<CronTx, ServiceError>> for FdbCronTxResult {
+    fn from(result: Result<CronTx, ServiceError>) -> Self {
+        match result {
+            Ok(cron_tx) => Self {
+                success: true,
+                err_msg: "".to_string(),
+                cron_tx,
+            },
+            Err(err) => Self {
+                success: false,
+                err_msg: err.to_string(),
+                cron_tx: CronTx::default(),
             },
         }
     }
