@@ -73,11 +73,8 @@
                          (new $array-inline-2
                           (seq
                            (seq
-                            (seq
-                             (ap "string" $array-inline-2)
-                             (ap "string" $array-inline-2)
-                            )
                             (ap "string" $array-inline-2)
+                            (ap "bytes" $array-inline-2)
                            )
                            (canon %init_peer_id% $array-inline-2  #array-inline-2-0)
                           )
@@ -87,11 +84,11 @@
                         (xor
                          (seq
                           (call %init_peer_id% ("op" "array_length") [decode_abi] array_length)
-                          (match array_length 3
+                          (match array_length 2
                            (seq
                             (seq
                              (call %init_peer_id% ("transaction" "get_meta_contract_by_id") [result-0.$.meta_contract_id!] metaContract)
-                             (call %init_peer_id% (metaContract.$.meta.meta_contract_id! "on_mint") [metaContract.$.meta! deserialize_fork.$.token_id! decode_abi.$.[1]! decode_abi.$.[2]!] meta_result)
+                             (call %init_peer_id% (metaContract.$.meta.meta_contract_id! "on_mint") [metaContract.$.meta! deserialize_fork.$.token_id! decode_abi.$.[1]!] meta_result)
                             )
                             (xor
                              (match meta_result.$.result! true

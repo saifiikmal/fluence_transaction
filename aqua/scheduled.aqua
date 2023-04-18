@@ -64,13 +64,13 @@ func getEventCron_30():
           for llog <- log par:
             log_data = Node.deserialize_fork(llog.data)
             if log_data.data != "":
-              forks = FevmJsonRpc.decode_abi(["string", "string", "string"], log_data.data)
+              forks = FevmJsonRpc.decode_abi(["string", "bytes"], log_data.data)
 
-              -- parsing Minted event log (data_key, ipfs_multiaddr, cid)
-              if MyOp.array_length(forks) == 3:
+              -- parsing Minted event log (data_key, data)
+              if MyOp.array_length(forks) == 2:
                 metaContract <- Node.get_meta_contract_by_id(result.meta_contract_id)
                 MetaContract metaContract.meta.meta_contract_id
-                meta_result <- MetaContract.on_mint(metaContract.meta, log_data.token_id, forks[1], forks[2])
+                meta_result <- MetaContract.on_mint(metaContract.meta, log_data.token_id, forks[1])
 
                 if meta_result.result:
                   Node.set_metadata_cron(forks[0], meta_result.result, meta_result.metadatas)

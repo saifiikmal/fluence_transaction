@@ -20,4 +20,4 @@ data MetaContractResult:
 service MetaContract("meta-contract"):
   on_clone() -> bool
   on_execute(contract: MetaContract, metadatas: []Metadata, transaction: Transaction) -> MetaContractResult
-  on_mint(contract: MetaContract, token_id: string, ipfs_multiaddr: string, cid: string) -> MetaContractResult
+  on_mint(contract: MetaContract, token_id: string, data: string) -> MetaContractResult

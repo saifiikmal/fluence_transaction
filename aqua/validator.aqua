@@ -54,13 +54,13 @@ func new_transaction_metadata(msg: string, count: i64):
 func new_transaction_contract(count: i64) -> FdbResult:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    rst <- Node.send_transaction("", "11", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0x3932b67f71807c307ec346141d5f665e245cb308a4ca1c3d73f058348cc12e3113eb7d82c7827bd5b803bcb4c23bee3b7a6b177d26988705a994caa5678bd7bc1b", "45866fde-d3ed-4bf3-a04b-ef902ef595c0", "contract", count)
+    rst <- Node.send_transaction("", "11", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0xad4c37c96e06c06c14819d057c30cb32e8b532c30760fcba8d1a80b287b21dc93fd390ce62de9f49c7417561d5c764d64222f369eaeba19ed797692a2a3086d31b", "8486dc99-6c58-4f3c-a34c-f61c5e3779af", "contract", count)
   <- rst
 
 func new_transaction_cron(data: string, count: i64) -> FdbResult:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    rst <- Node.send_transaction("", "", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0x4e6b05686a0385d0cab63a00e1350f7592d919ea43be0698a708633c8b5688c6647b1ff71aa72f46b7f68948887a3abdb22274dfa764fd7f4ac5c6f92dfa24e91c", data, "cron", count)
+    rst <- Node.send_transaction("", "", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0xe45c4b2a17846377be8ec42a28b50d0b3894b3ccd2bc872e3ebaa018dc6cc6c766ec3e6ce2582574f4bf6ae84b2e0f219c50c564e0571a80921147db291616a21c", data, "cron", count)
   <- rst
 
 func pending_txs() -> FdbTransactionsResult:
@@ -93,13 +93,13 @@ func processCron():
           for llog <- log par:
             log_data = Node.deserialize_fork(llog.data)
             if log_data.data != "":
-              forks = FevmJsonRpc.decode_abi(["string", "string", "string"], log_data.data)
+              forks = FevmJsonRpc.decode_abi(["string", "bytes"], log_data.data)
 
-              -- parsing Minted event log (data_key, ipfs_multiaddr, cid)
-              if MyOp.array_length(forks) == 3:
+              -- parsing Minted event log (data_key, data)
+              if MyOp.array_length(forks) == 2:
                 metaContract <- Node.get_meta_contract_by_id(result.meta_contract_id)
                 MetaContract metaContract.meta.meta_contract_id
-                meta_result <- MetaContract.on_mint(metaContract.meta, log_data.token_id, forks[1], forks[2])
+                meta_result <- MetaContract.on_mint(metaContract.meta, log_data.token_id, forks[1])
 
                 if meta_result.result:
                   Node.set_metadata_cron(forks[0], meta_result.result, meta_result.metadatas)
