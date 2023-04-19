@@ -28,3 +28,7 @@ modules_dir = "artifacts/"
     name = "node"
     mem_pages_count = 100
     logger_enabled = true
+
+    [module.wasi]
+    preopened_files = ["/tmp"]
+    mapped_dirs = { "tmp" = "/tmp" }

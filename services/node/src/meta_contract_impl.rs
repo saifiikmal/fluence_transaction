@@ -16,14 +16,6 @@ impl Storage {
             META_CONTRACT_TABLE_NAME
         );
 
-        let current_table_schema = self
-            .get_table_schema(META_CONTRACT_TABLE_NAME.to_string())
-            .expect(f!("failed to get {META_CONTRACT_TABLE_NAME} table schema").as_str());
-        if !current_table_schema.is_empty() && table_schema != current_table_schema {
-            self.delete_table(META_CONTRACT_TABLE_NAME.to_string())
-                .expect(f!("failed to delete {META_CONTRACT_TABLE_NAME} table").as_str())
-        }
-
         let result = self.connection.execute(table_schema);
 
         if let Err(error) = result {

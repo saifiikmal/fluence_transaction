@@ -1,3 +1,3 @@
 {
-  "data": "{\"address\":\"0x0692f233614802D06e86CBDE6b5D090A9F5d3c10\",\"chain\":\"80001\",\"topic\":\"0x957f358702a4cd1c866fb29aefe080a9a56303adf02d47a081a56707d2d30033\",\"token_type\":\"erc1155\",\"meta_contract_id\":\"8486dc99-6c58-4f3c-a34c-f61c5e3779af\",\"action\":\"create\",\"cron_id\":0,\"status\":0,\"node_url\":\"https://polygon-mumbai.g.alchemy.com/v2/NThx9TtzI_7El4WRoiYZzbSNzymifW5Q\"}"
+  "data": "{\"address\":\"0x0692f233614802D06e86CBDE6b5D090A9F5d3c10\",\"chain\":\"80001\",\"topic\":\"0x957f358702a4cd1c866fb29aefe080a9a56303adf02d47a081a56707d2d30033\",\"token_type\":\"erc1155\",\"meta_contract_id\":\"6fd948fa-35ef-4a96-9b21-5cff6c4db4ac\",\"action\":\"create\",\"cron_id\":0,\"status\":0,\"node_url\":\"https://polygon-mumbai.g.alchemy.com/v2/NThx9TtzI_7El4WRoiYZzbSNzymifW5Q\"}"
 }

@@ -1,5 +1,5 @@
 {
-  "zero": {
+  "transaction": {
     "modules": [
       {
         "name": "crypto",
@@ -26,7 +26,9 @@
       {
         "name": "node",
         "path": "./artifacts/node.wasm",
-        "logger_enabled": true
+        "logger_enabled": true,
+        "preopened_files": ["./tmp"],
+        "mapped_dirs": [["tmp", "./tmp"]]
       }
     ]
   }
