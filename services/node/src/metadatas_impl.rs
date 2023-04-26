@@ -56,6 +56,7 @@ impl Storage {
     pub fn update_cid(
         &self,
         data_key: String,
+        alias: String,
         public_key: String,
         cid: String,
     ) -> Result<(), ServiceError> {
@@ -63,9 +64,9 @@ impl Storage {
             "
           update {}
           set cid = '{}'
-          where data_key = '{}' AND public_key = '{}';
+          where data_key = '{}' AND alias = '{}' AND public_key = '{}';
           ",
-            METADATAS_TABLE_NAME, cid, data_key, public_key
+            METADATAS_TABLE_NAME, cid, data_key, alias, public_key
         ))?;
 
         Ok(())

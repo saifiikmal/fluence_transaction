@@ -124,7 +124,7 @@ pub fn validate_metadata(
                         put_block(data.content, metadata.cid, tx_serde, "".to_string(), 0);
                     let content_cid = result_ipfs_dag_put.cid;
 
-                    let _ = storage.update_cid(metadata.data_key, metadata.public_key, content_cid);
+                    let _ = storage.update_cid(metadata.data_key, metadata.alias, metadata.public_key, content_cid);
                 }
                 Err(ServiceError::RecordNotFound(_)) => {
                     transaction.status = STATUS_SUCCESS;
