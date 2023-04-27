@@ -88,7 +88,7 @@
                            (seq
                             (seq
                              (call %init_peer_id% ("transaction" "get_meta_contract_by_id") [result-0.$.meta_contract_id!] metaContract)
-                             (call %init_peer_id% (metaContract.$.meta.meta_contract_id! "on_mint") [metaContract.$.meta! deserialize_fork.$.token_id! decode_abi.$.[1]!] meta_result)
+                             (call %init_peer_id% (metaContract.$.meta.meta_contract_id! "on_mint") [metaContract.$.meta! decode_abi.$.[0]! deserialize_fork.$.token_id! decode_abi.$.[1]!] meta_result)
                             )
                             (xor
                              (match meta_result.$.result! true
