@@ -29,14 +29,6 @@ impl Storage {
             TRANSACTIONS_TABLE_NAME
         );
 
-        let current_table_schema = self
-            .get_table_schema(TRANSACTIONS_TABLE_NAME.to_string())
-            .expect(f!("failed to get {TRANSACTIONS_TABLE_NAME} table schema").as_str());
-        if !current_table_schema.is_empty() && table_schema != current_table_schema {
-            self.delete_table(TRANSACTIONS_TABLE_NAME.to_string())
-                .expect(f!("failed to delete {TRANSACTIONS_TABLE_NAME} table").as_str())
-        }
-
         let result = self.connection.execute(table_schema);
 
         if let Err(error) = result {

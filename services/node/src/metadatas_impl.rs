@@ -20,14 +20,6 @@ impl Storage {
             METADATAS_TABLE_NAME
         );
 
-        let current_table_schema = self
-            .get_table_schema(METADATAS_TABLE_NAME.to_string())
-            .expect(f!("failed to get {METADATAS_TABLE_NAME} table schema").as_str());
-        if !current_table_schema.is_empty() && table_schema != current_table_schema {
-            self.delete_table(METADATAS_TABLE_NAME.to_string())
-                .expect(f!("failed to delete {METADATAS_TABLE_NAME} table").as_str())
-        }
-
         let result = self.connection.execute(table_schema);
 
         if let Err(error) = result {
@@ -64,6 +56,7 @@ impl Storage {
     pub fn update_cid(
         &self,
         data_key: String,
+        alias: String,
         public_key: String,
         cid: String,
     ) -> Result<(), ServiceError> {
@@ -71,9 +64,9 @@ impl Storage {
             "
           update {}
           set cid = '{}'
-          where data_key = '{}' AND public_key = '{}';
+          where data_key = '{}' AND alias = '{}' AND public_key = '{}';
           ",
-            METADATAS_TABLE_NAME, cid, data_key, public_key
+            METADATAS_TABLE_NAME, cid, data_key, alias, public_key
         ))?;
 
         Ok(())
