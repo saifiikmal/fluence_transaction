@@ -54,13 +54,13 @@ func new_transaction_metadata(msg: string, count: i64):
 func new_transaction_contract(count: i64) -> FdbResult:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    rst <- Node.send_transaction("", "22554c0693972d304646548b90ab240e9eb68c56ef0d1141fdf9d42f26af6c6e", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0x96a6156a5488d0fcfbb863ac138e5e5f7d92b68dab63c7e13ee55522a6b60a7c57ffd893de9c80dfb92daaba645cd49ed988810318c79ace307af37b9bdb64051c", "58b196f4-2564-4dca-9a6a-f02f8280bf2a", "contract", count)
+    rst <- Node.send_transaction("", "22554c0693972d304646548b90ab240e9eb68c56ef0d1141fdf9d42f26af6c6e", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0xdd681faf8e24586d9a683795579a84c53233894b79d394b9192048b0c802da2c55d1a6f381a7c2428356936a182cf74ee4128c539affa3b2f462dd5c13fd92dd1b", "58b196f4-2564-4dca-9a6a-f02f8280bf2a", "contract", count)
   <- rst
 
 func new_transaction_cron(data: string, count: i64) -> FdbResult:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    rst <- Node.send_transaction("", "", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0xd983a8f09c314c4784dcab7a4dfd97892bfe9bee55c203f594e84cd22854e72e3dd6bddc08be4dba8e03d7b9a2cd817a4551638a2193f0ec78c208cea91dfbb21b", data, "cron", count)
+    rst <- Node.send_transaction("", "", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0x96a6156a5488d0fcfbb863ac138e5e5f7d92b68dab63c7e13ee55522a6b60a7c57ffd893de9c80dfb92daaba645cd49ed988810318c79ace307af37b9bdb64051c", data, "cron", count)
   <- rst
 
 func pending_txs() -> FdbTransactionsResult:
