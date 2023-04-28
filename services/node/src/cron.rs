@@ -76,14 +76,6 @@ impl Storage {
             CRON_TABLE_NAME
         );
 
-        let current_table_schema = self
-            .get_table_schema(CRON_TABLE_NAME.to_string())
-            .expect(f!("failed to get {CRON_TABLE_NAME} table schema").as_str());
-        if !current_table_schema.is_empty() && table_schema != current_table_schema {
-            self.delete_table(CRON_TABLE_NAME.to_string())
-                .expect(f!("failed to delete {CRON_TABLE_NAME} table").as_str())
-        }
-
         let result = self.connection.execute(table_schema);
 
         if let Err(error) = result {
