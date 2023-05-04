@@ -33,7 +33,7 @@ use error::ServiceError::{
     NotSupportedEncryptionType, RecordFound,
 };
 
-use metadatas::FinalMetadata;
+use metadatas::{FinalMetadata, MetadataQuery, MetadataOrdering};
 use result::{
     FdbCronsResult, FdbMetaContractResult, FdbMetadataHistoryResult, FdbMetadatasResult,
     FdbTransactionResult, FdbTransactionsResult,
@@ -356,6 +356,16 @@ pub fn get_metadata(data_key: String, public_key: String, alias: String) -> FdbM
 #[marine]
 pub fn get_metadatas(data_key: String) -> FdbMetadatasResult {
     wrapped_try(|| get_storage()?.get_metadata_by_datakey(data_key)).into()
+}
+
+#[marine]
+pub fn search_metadatas(
+  query: Vec<MetadataQuery>,
+  ordering: Vec<MetadataOrdering>,
+  from: u32,
+  to: u32,
+) -> FdbMetadatasResult {
+  wrapped_try(|| get_storage()?.search_metadatas(query, ordering, from, to)).into()
 }
 
 #[marine]

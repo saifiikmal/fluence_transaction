@@ -126,4 +126,10 @@ func get_all_cron_txs() -> FdbCronTxsResult:
     Node NODE_SERVICE_ID
     result <- Node.get_all_cron_txs()
   <- result
+
+func search_metadatas(query: []MetadataQuery, ordering: []MetadataOrdering, from: u32, to:u32) -> FdbMetadatasResult:
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    result <- Node.search_metadatas(query, ordering, from, to)
+  <- result
       
