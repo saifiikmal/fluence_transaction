@@ -27,3 +27,17 @@ pub struct FinalMetadata {
     pub alias: String,
     pub content: String,
 }
+
+#[marine]
+#[derive(Debug)]
+pub struct MetadataQuery {
+  pub column: String,
+  pub query: String,
+}
+
+#[marine]
+#[derive(Debug)]
+pub struct MetadataOrdering {
+  pub column: String,
+  pub sort: String,
+}
