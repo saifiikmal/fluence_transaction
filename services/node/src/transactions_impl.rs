@@ -1,4 +1,4 @@
-use crate::defaults::{STATUS_PENDING, TRANSACTIONS_TABLE_NAME};
+use crate::defaults::{STATUS_PENDING, STATUS_SUCCESS, TRANSACTIONS_TABLE_NAME};
 use crate::error::ServiceError;
 use crate::error::ServiceError::InternalError;
 use crate::storage_impl::Storage;
@@ -108,6 +108,28 @@ impl Storage {
         ))?;
 
         statement.bind(1, &Value::Integer(STATUS_PENDING))?;
+
+        let mut transactions = Vec::new();
+
+        while let State::Row = statement.next()? {
+            transactions.push(read(&statement)?);
+        }
+
+        Ok(transactions)
+    }
+
+    pub fn get_success_transansactions(
+        &self,
+        from: i64,
+        to: i64,
+    ) -> Result<Vec<Transaction>, ServiceError> {
+        let mut statement = self.connection.prepare(f!(
+            "SELECT * FROM {TRANSACTIONS_TABLE_NAME} WHERE status = ? AND timestamp BETWEEN ? AND ?"
+        ))?;
+
+        statement.bind(1, &Value::Integer(STATUS_SUCCESS))?;
+        statement.bind(2, &Value::Integer(from))?;
+        statement.bind(3, &Value::Integer(to))?;
 
         let mut transactions = Vec::new();
 

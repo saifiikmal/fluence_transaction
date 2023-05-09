@@ -2,15 +2,24 @@ use eyre::Result;
 use marine_rs_sdk::marine;
 
 use crate::{
-    cron::{Cron, CronResult}, error::ServiceError, meta_contract::MetaContract, metadatas::Metadata,
-    transaction::Transaction,
+    cron::{Cron, CronResult},
     cron_tx::CronTx,
+    error::ServiceError,
+    meta_contract::MetaContract,
+    metadatas::Metadata,
+    transaction::Transaction,
 };
 
 #[marine]
 #[derive(Debug)]
 pub struct FdbResult {
     pub transaction_hash: String,
+}
+
+#[marine]
+#[derive(Debug)]
+pub struct FdbClock {
+    pub timestamp: i64,
 }
 
 #[marine]

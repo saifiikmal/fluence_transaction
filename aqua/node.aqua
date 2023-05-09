@@ -31,6 +31,9 @@ data DataTypeFork:
   token_id: string
   address: string
 
+data FdbClock:
+  timestamp: i64
+
 data FdbCronTxResult:
   success: bool
   err_msg: string
@@ -121,7 +124,7 @@ data MetadataQuery:
   column: string
   query: string
 
-service Node("transaction"):
+service Node("node"):
   bind_meta_contract(transaction_hash: string)  
   deserialize_fork(data: string) -> DataTypeFork
   get_active_crons() -> FdbCronsResult
@@ -134,7 +137,9 @@ service Node("transaction"):
   get_metadata(data_key: string, public_key: string, alias: string) -> FdbMetadataResult
   get_metadata_with_history(data_key: string, public_key: string, alias: string) -> FdbMetadataHistoryResult
   get_metadatas(data_key: string) -> FdbMetadatasResult
+  get_node_clock() -> FdbClock
   get_pending_transactions() -> FdbTransactionsResult
+  get_success_transansactions(from: i64, to: i64) -> FdbTransactionsResult
   get_transaction(hash: string) -> FdbTransactionResult
   search_cron_tx(address: string, chain: string, topic: string) -> FdbCronTxsResult
   search_metadatas(query: []MetadataQuery, ordering: []MetadataOrdering, from: u32, to: u32) -> FdbMetadatasResult
