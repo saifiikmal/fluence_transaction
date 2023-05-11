@@ -354,7 +354,7 @@ pub fn get_transaction(hash: String) -> FdbTransactionResult {
 }
 
 #[marine]
-pub fn get_success_transansactions(from: i64, to: i64) -> FdbTransactionsResult {
+pub fn get_success_transactions(from: i64, to: i64) -> FdbTransactionsResult {
     let mut ts: i64 = 0;
     if to == 0 {
         let now = SystemTime::now();
