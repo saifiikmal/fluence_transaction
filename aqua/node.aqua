@@ -139,7 +139,7 @@ service Node("node"):
   get_metadatas(data_key: string) -> FdbMetadatasResult
   get_node_clock() -> FdbClock
   get_pending_transactions() -> FdbTransactionsResult
-  get_success_transansactions(from: i64, to: i64) -> FdbTransactionsResult
+  get_success_transactions(from: i64, to: i64) -> FdbTransactionsResult
   get_transaction(hash: string) -> FdbTransactionResult
   search_cron_tx(address: string, chain: string, topic: string) -> FdbCronTxsResult
   search_metadatas(query: []MetadataQuery, ordering: []MetadataOrdering, from: u32, to: u32) -> FdbMetadatasResult
