@@ -30,7 +30,7 @@ cp target/wasm32-wasi/release/ipfsdag.wasm artifacts/
 cp target/wasm32-wasi/release/ipfsdag.wasm ../builtin-package/
 cp target/wasm32-wasi/release/node.wasm artifacts/
 cp target/wasm32-wasi/release/node.wasm ../builtin-package/
-marine aqua artifacts/node.wasm -s Node -i node > ../aqua/node.aqua
+marine aqua artifacts/node.wasm -s Node -i transaction > ../aqua/node.aqua
 
 wget https://github.com/fluencelabs/sqlite/releases/download/v0.18.0_w/sqlite3.wasm
 mv sqlite3.wasm artifacts/

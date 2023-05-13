@@ -124,7 +124,7 @@ data MetadataQuery:
   column: string
   query: string
 
-service Node("node"):
+service Node("transaction"):
   bind_meta_contract(transaction_hash: string)  
   deserialize_fork(data: string) -> DataTypeFork
   get_active_crons() -> FdbCronsResult

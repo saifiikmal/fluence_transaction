@@ -69,6 +69,12 @@ func pending_txs() -> FdbTransactionsResult:
     result <- Node.get_pending_transactions()
   <- result
 
+func success_txs(f: i64, t: i64) -> FdbTransactionsResult:
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    result <- Node.get_success_transactions(f, t)
+  <- result
+
 func processCron():
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
@@ -131,5 +137,4 @@ func search_metadatas(query: []MetadataQuery, ordering: []MetadataOrdering, from
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
     result <- Node.search_metadatas(query, ordering, from, to)
-  <- result
-      
+  <- result     
