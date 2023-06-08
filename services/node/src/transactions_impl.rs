@@ -2,7 +2,7 @@ use crate::defaults::{STATUS_PENDING, TRANSACTIONS_TABLE_NAME};
 use crate::error::ServiceError;
 use crate::error::ServiceError::InternalError;
 use crate::storage_impl::Storage;
-use crate::transaction::Transaction;
+use crate::transaction::{Transaction, TransactionQuery, TransactionOrdering};
 use marine_sqlite_connector::{State, Statement, Value};
 
 impl Storage {
@@ -116,6 +116,48 @@ impl Storage {
         }
 
         Ok(transactions)
+    }
+
+    pub fn get_transactions(&self, query: Vec<TransactionQuery>, ordering: Vec<TransactionOrdering>, from: u32, to: u32) -> Result<Vec<Transaction>, ServiceError> {
+      
+      let mut query_str = "".to_string();
+      let mut ordering_str = "".to_string();
+      let mut limit_str = "".to_string();
+
+      if query.len() > 0 {
+        let queries: Vec<String> = query.into_iter().map(|param| format!("{} = '{}'", param.column, param.query)).collect();
+
+        query_str = format!("WHERE {}",queries.join(" AND "));
+      }
+
+      if ordering.len() > 0 {
+        let orders: Vec<String> = ordering.into_iter().map(|param| format!("{} {}", param.column, param.sort)).collect();
+      
+        ordering_str = format!("ORDER BY {}",orders.join(", "));
+      } else {
+        ordering_str = format!("ORDER BY timestamp DESC");
+      }
+      if to > 0 {
+        limit_str = format!("LIMIT {},{}", from, to);
+      }
+
+      
+      let s = format!("SELECT * FROM {} {} {} {}", TRANSACTIONS_TABLE_NAME, query_str, ordering_str, limit_str);
+
+      log::info!("{}", s.clone());
+
+      let mut statement = self
+      .connection
+      .prepare(s)?;
+
+
+      let mut transactions = Vec::new();
+
+      while let State::Row = statement.next()? {
+        transactions.push(read(&statement)?);
+      }
+
+      Ok(transactions)
     }
 }
 

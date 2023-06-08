@@ -121,6 +121,14 @@ data MetadataQuery:
   column: string
   query: string
 
+data TransactionOrdering:
+  column: string
+  sort: string
+
+data TransactionQuery:
+  column: string
+  query: string
+
 service Node("transaction"):
   bind_meta_contract(transaction_hash: string)  
   deserialize_fork(data: string) -> DataTypeFork
@@ -136,6 +144,7 @@ service Node("transaction"):
   get_metadatas(data_key: string) -> FdbMetadatasResult
   get_pending_transactions() -> FdbTransactionsResult
   get_transaction(hash: string) -> FdbTransactionResult
+  get_transactions(query: []TransactionQuery, ordering: []TransactionOrdering, from: u32, to: u32) -> FdbTransactionsResult
   search_cron_tx(address: string, chain: string, topic: string) -> FdbCronTxsResult
   search_metadatas(query: []MetadataQuery, ordering: []MetadataOrdering, from: u32, to: u32) -> FdbMetadatasResult
   send_cron_tx(cron_id: i64, data_key: string, data: string, tx_block_number: u64, tx_hash: string, token_id: string) -> FdbCronTxResult
