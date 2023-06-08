@@ -2,6 +2,7 @@
 
 mod block;
 pub mod cron;
+pub mod cron_tx;
 mod data_types;
 mod defaults;
 mod error;
@@ -13,7 +14,6 @@ mod result;
 mod storage_impl;
 mod transaction;
 pub mod transactions_impl;
-pub mod cron_tx;
 mod validators;
 
 use cron::SerdeCron;
@@ -33,11 +33,10 @@ use error::ServiceError::{
     NotSupportedEncryptionType, RecordFound,
 };
 
-use metadatas::{FinalMetadata, MetadataQuery, MetadataOrdering};
+use metadatas::{FinalMetadata, MetadataOrdering, MetadataQuery};
 use result::{
-    FdbCronsResult, FdbMetaContractResult, FdbMetadataHistoryResult, FdbMetadatasResult,
-    FdbTransactionResult, FdbTransactionsResult,
-    FdbCronTxsResult, FdbCronTxResult,
+    FdbClock, FdbCronTxResult, FdbCronTxsResult, FdbCronsResult, FdbMetaContractResult,
+    FdbMetadataHistoryResult, FdbMetadatasResult, FdbTransactionResult, FdbTransactionsResult,
 };
 use result::{FdbMetadataResult, FdbResult};
 use serde_json::Value;
@@ -45,7 +44,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use storage_impl::get_storage;
 use transaction::{Transaction, TransactionQuery, TransactionOrdering};
 use types::{IpfsDagGetResult, IpfsDagPutResult};
-use validators::{validate_clone, validate_meta_contract, validate_metadata, validate_metadata_cron, validate_cron};
+use validators::{
+    validate_clone, validate_cron, validate_meta_contract, validate_metadata,
+    validate_metadata_cron,
+};
 
 #[macro_use]
 extern crate fstrings;
@@ -90,7 +92,11 @@ pub fn send_transaction(
     let storage = get_storage().expect("Database non existance");
 
     if error.is_none() {
-        if method != METHOD_CONTRACT && method != METHOD_METADATA && method != METHOD_CLONE && method != METHOD_CRON {
+        if method != METHOD_CONTRACT
+            && method != METHOD_METADATA
+            && method != METHOD_CLONE
+            && method != METHOD_CRON
+        {
             error = Some(InvalidMethod(f!("invalid method: {method}")));
         }
     }
@@ -264,85 +270,113 @@ pub fn send_transaction(
 
 #[marine]
 pub fn send_cron_tx(
-  cron_id: i64,
-  data_key: String,
-  data: String,
-  tx_block_number: u64, 
-  tx_hash: String,
-  token_id: String,
+    cron_id: i64,
+    data_key: String,
+    data: String,
+    tx_block_number: u64,
+    tx_hash: String,
+    token_id: String,
 ) -> FdbCronTxResult {
-  let mut error: Option<ServiceError> = None;
-  let mut success = true;
-  let mut proceed = false;
-  let mut err_msg = "".to_string();
-  let mut cron_tx = CronTx::default();
-  let storage = get_storage().expect("Database non existance");
+    let mut error: Option<ServiceError> = None;
+    let mut success = true;
+    let mut proceed = false;
+    let mut err_msg = "".to_string();
+    let mut cron_tx = CronTx::default();
+    let storage = get_storage().expect("Database non existance");
 
-  let cron = storage.get_cron_by_id(cron_id);
+    let cron = storage.get_cron_by_id(cron_id);
 
-  match cron {
-      Ok(cron_data) => {
+    match cron {
+        Ok(cron_data) => {
+            let logs = storage.get_cron_tx_by_tx_hash(
+                tx_hash.clone(),
+                cron_data.clone().address,
+                cron_data.clone().chain,
+                cron_data.clone().topic,
+            );
 
-        let logs = storage.get_cron_tx_by_tx_hash(
-            tx_hash.clone(), cron_data.clone().address, cron_data.clone().chain, cron_data.clone().topic);
-
-        match logs {
-          Ok(tx) => {
-            if tx.status == STATUS_FAILED {
-              proceed = true;
-            } else {
-              cron_tx = tx;
+            match logs {
+                Ok(tx) => {
+                    if tx.status == STATUS_FAILED {
+                        proceed = true;
+                    } else {
+                        cron_tx = tx;
+                    }
+                }
+                Err(ServiceError::RecordNotFound(_)) => {
+                    proceed = true;
+                }
+                Err(e) => error = Some(e),
             }
-          },
-          Err(ServiceError::RecordNotFound(_)) => {
-            proceed = true;
-          },
-          Err(e) => error = Some(e),
+
+            if proceed {
+                let now = SystemTime::now();
+                let timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+
+                cron_tx = CronTx::new(
+                    cron_data.address,
+                    cron_data.topic,
+                    cron_data.token_type,
+                    cron_data.chain,
+                    cron_data.meta_contract_id,
+                    timestamp.as_millis() as u64,
+                    tx_block_number,
+                    tx_hash,
+                    STATUS_SUCCESS,
+                    data,
+                    "".to_string(),
+                    token_id,
+                    data_key,
+                );
+
+                let _ = storage.write_cron_tx(cron_tx.clone());
+            }
         }
+        Err(ServiceError::RecordNotFound(_)) => {}
+        Err(e) => error = Some(e),
+    }
 
-        if proceed {
-          let now = SystemTime::now();
-          let timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
-      
-          cron_tx = CronTx::new(
-            cron_data.address,
-            cron_data.topic,
-            cron_data.token_type,
-            cron_data.chain,
-            cron_data.meta_contract_id,
-            timestamp.as_millis() as u64,
-            tx_block_number,
-            tx_hash,
-            STATUS_SUCCESS,
-            data,
-            "".to_string(),
-            token_id,
-            data_key
-          );
-      
-          let _ = storage.write_cron_tx(cron_tx.clone());
-        }
-      },
-      Err(ServiceError::RecordNotFound(_)) => {}
-      Err(e) => error = Some(e),
-  }
+    if !error.is_none() {
+        success = false;
+        err_msg = error.unwrap().to_string();
+    }
 
-
-  if !error.is_none() {
-    success = false;
-    err_msg = error.unwrap().to_string();
-  }
-
-  FdbCronTxResult { 
-    success, 
-    err_msg, 
-    cron_tx, 
-  }
+    FdbCronTxResult {
+        success,
+        err_msg,
+        cron_tx,
+    }
 }
 
 #[marine]
 pub fn get_transaction(hash: String) -> FdbTransactionResult {
     wrapped_try(|| get_storage()?.get_transaction(hash)).into()
+}
+
+#[marine]
+pub fn get_success_transactions(from: i64, to: i64) -> FdbTransactionsResult {
+    let mut ts: i64 = 0;
+    if to == 0 {
+        let now = SystemTime::now();
+        let timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+        let milliseconds = timestamp.as_millis();
+        ts = milliseconds as i64
+    } else {
+        ts = to
+    }
+
+    wrapped_try(|| get_storage()?.get_success_transactions(from, ts)).into()
+}
+
+#[marine]
+pub fn get_node_clock() -> FdbClock {
+    let now = SystemTime::now();
+    let timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+    let milliseconds = timestamp.as_millis();
+
+    FdbClock {
+        timestamp: milliseconds as i64,
+    }
 }
 
 #[marine]
@@ -360,12 +394,12 @@ pub fn get_metadatas(data_key: String) -> FdbMetadatasResult {
 
 #[marine]
 pub fn search_metadatas(
-  query: Vec<MetadataQuery>,
-  ordering: Vec<MetadataOrdering>,
-  from: u32,
-  to: u32,
+    query: Vec<MetadataQuery>,
+    ordering: Vec<MetadataOrdering>,
+    from: u32,
+    to: u32,
 ) -> FdbMetadatasResult {
-  wrapped_try(|| get_storage()?.search_metadatas(query, ordering, from, to)).into()
+    wrapped_try(|| get_storage()?.search_metadatas(query, ordering, from, to)).into()
 }
 
 #[marine]
@@ -410,39 +444,32 @@ pub fn get_all_cron_txs() -> FdbCronTxsResult {
 
 #[marine]
 pub fn get_cron_tx_by_tx_hash(
-  tx_hash: String,
-  address: String,
-  chain: String,
-  topic: String,
+    tx_hash: String,
+    address: String,
+    chain: String,
+    topic: String,
 ) -> FdbCronTxResult {
-  wrapped_try(|| get_storage()?.get_cron_tx_by_tx_hash(tx_hash, address, chain, topic)).into()
+    wrapped_try(|| get_storage()?.get_cron_tx_by_tx_hash(tx_hash, address, chain, topic)).into()
 }
 
 #[marine]
-pub fn search_cron_tx(
-  address: String,
-  chain: String,
-  topic: String,
-) -> FdbCronTxsResult {
-  wrapped_try(|| get_storage()?.search_cron_tx(address, chain, topic)).into()
+pub fn search_cron_tx(address: String, chain: String, topic: String) -> FdbCronTxsResult {
+    wrapped_try(|| get_storage()?.search_cron_tx(address, chain, topic)).into()
 }
 
 #[marine]
-pub fn get_cron_tx_latest_block(
-  address: String,
-  chain: String,
-  topic: String,
-) -> u64 {
-  wrapped_try(|| {
-    let storage = get_storage().expect("Internal error to database connector");
-    let result = storage.get_cron_tx_latest_block(address, chain, topic);
+pub fn get_cron_tx_latest_block(address: String, chain: String, topic: String) -> u64 {
+    wrapped_try(|| {
+        let storage = get_storage().expect("Internal error to database connector");
+        let result = storage.get_cron_tx_latest_block(address, chain, topic);
 
-    match result {
-      Ok(log) => log.tx_block_number,
-      Err(ServiceError::RecordNotFound(_)) => 0,
-      Err(_) => 0,
-    }
-  }).into()
+        match result {
+            Ok(log) => log.tx_block_number,
+            Err(ServiceError::RecordNotFound(_)) => 0,
+            Err(_) => 0,
+        }
+    })
+    .into()
 }
 
 #[marine]
@@ -521,11 +548,7 @@ pub fn set_metadata_cron(
     on_metacontract_result: bool,
     metadatas: Vec<FinalMetadata>,
 ) {
-    validate_metadata_cron(
-        data_key,
-        on_metacontract_result,
-        metadatas,
-    );
+    validate_metadata_cron(data_key, on_metacontract_result, metadatas);
 }
 
 #[marine]
@@ -546,14 +569,8 @@ pub fn set_clone(
 }
 
 #[marine]
-pub fn set_cron(
-  transaction_hash: String,
-  data: String,
-) {
-  validate_cron(
-    transaction_hash, 
-    data,
-  );
+pub fn set_cron(transaction_hash: String, data: String) {
+    validate_cron(transaction_hash, data);
 }
 
 // *********** Deserializer *****************
