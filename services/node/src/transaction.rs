@@ -32,6 +32,20 @@ pub struct TransactionSubset {
     pub value: String,
 }
 
+#[marine]
+#[derive(Debug)]
+pub struct TransactionQuery {
+  pub column: String,
+  pub query: String,
+}
+
+#[marine]
+#[derive(Debug)]
+pub struct TransactionOrdering {
+  pub column: String,
+  pub sort: String,
+}
+
 impl Transaction {
     pub fn new(
         token_key: String,

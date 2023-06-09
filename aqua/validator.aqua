@@ -75,6 +75,12 @@ func success_txs(f: i64, t: i64) -> FdbTransactionsResult:
     result <- Node.get_success_transactions(f, t)
   <- result
 
+func get_txs(query: []TransactionQuery, ordering: []TransactionOrdering, from: u32, to: u32) -> FdbTransactionsResult:
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    result <- Node.get_transactions(query, ordering, from, to)
+  <- result
+
 func processCron():
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
