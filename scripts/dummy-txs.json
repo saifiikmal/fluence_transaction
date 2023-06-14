@@ -1,0 +1,16 @@
+{
+  "query": [
+    {
+      "column": "method",
+      "query": "metadata"
+    }
+  ],
+  "ordering": [
+    {
+      "column": "timestamp",
+      "sort": "desc"
+    }
+  ],
+  "from": 0,
+  "to": 0
+}
