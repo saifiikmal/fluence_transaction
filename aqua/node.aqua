@@ -132,6 +132,17 @@ data TransactionQuery:
   column: string
   query: string
 
+data TransactionRequest:
+  data_key: string
+  token_key: string
+  token_id: string
+  alias: string
+  public_key: string
+  signature: string
+  data: string
+  method: string
+  nonce: i64
+
 service Node("transaction"):
   bind_meta_contract(transaction_hash: string)  
   deserialize_fork(data: string) -> DataTypeFork
@@ -152,6 +163,7 @@ service Node("transaction"):
   get_transactions(query: []TransactionQuery, ordering: []TransactionOrdering, from: u32, to: u32) -> FdbTransactionsResult
   search_cron_tx(address: string, chain: string, topic: string) -> FdbCronTxsResult
   search_metadatas(query: []MetadataQuery, ordering: []MetadataOrdering, from: u32, to: u32) -> FdbMetadatasResult
+  send_batch_transaction(txs: []TransactionRequest) -> []FdbResult
   send_cron_tx(cron_id: i64, data_key: string, data: string, tx_block_number: u64, tx_hash: string, token_id: string) -> FdbCronTxResult
   send_transaction(data_key: string, token_key: string, token_id: string, alias: string, public_key: string, signature: string, data: string, method: string, nonce: i64) -> FdbResult
   set_clone(transaction_hash: string, meta_contract_id: string, on_metacontract_result: bool, data: string, final_error_msg: string)  

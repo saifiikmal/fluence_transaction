@@ -23,6 +23,20 @@ pub struct Transaction {
     pub token_id: String,
 }
 
+#[marine]
+#[derive(Debug, Default)]
+pub struct TransactionRequest {
+  pub data_key: String,
+  pub token_key: String,
+  pub token_id: String,
+  pub alias: String,
+  pub public_key: String,
+  pub signature: String,
+  pub data: String,
+  pub method: String,
+  pub nonce: i64,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct TransactionSubset {
     pub hash: String,

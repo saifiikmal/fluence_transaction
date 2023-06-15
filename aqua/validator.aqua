@@ -143,4 +143,10 @@ func search_metadatas(query: []MetadataQuery, ordering: []MetadataOrdering, from
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
     result <- Node.search_metadatas(query, ordering, from, to)
-  <- result     
+  <- result   
+
+func send_batch_txs(txs: []TransactionRequest) -> []FdbResult:
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    results <- Node.send_batch_transaction(txs)
+  <- results
