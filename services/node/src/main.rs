@@ -42,7 +42,7 @@ use result::{FdbMetadataResult, FdbResult};
 use serde_json::Value;
 use std::time::{SystemTime, UNIX_EPOCH};
 use storage_impl::get_storage;
-use transaction::{Transaction, TransactionQuery, TransactionOrdering};
+use transaction::{Transaction, TransactionQuery, TransactionOrdering, TransactionRequest};
 use types::{IpfsDagGetResult, IpfsDagPutResult};
 use validators::{
     validate_clone, validate_cron, validate_meta_contract, validate_metadata,
@@ -266,6 +266,29 @@ pub fn send_transaction(
     FdbResult {
         transaction_hash: transaction.hash,
     }
+}
+
+#[marine]
+pub fn send_batch_transaction(
+  txs: Vec<TransactionRequest>
+) -> Vec<FdbResult> {
+  let mut results: Vec<FdbResult> = vec![];
+  
+  for tx in txs {
+    let result = send_transaction(
+      tx.data_key, 
+      tx.token_key, 
+      tx.token_id, 
+      tx.alias, 
+      tx.public_key, 
+      tx.signature, 
+      tx.data, 
+      tx.method, 
+      tx.nonce);
+
+      results.push(result);
+  }
+  results
 }
 
 #[marine]
