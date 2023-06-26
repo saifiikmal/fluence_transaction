@@ -14,6 +14,9 @@ service MyOp("op"):
 
 service MyOp2("op"):
   array_length(results: []EventLogParamResult) -> i64
+
+service MyOp3("op"):
+  array_length(results: []CronResult) -> i64
   
 func validateTransaction(hash: string):
   on HOST_PEER_ID:
@@ -47,9 +50,16 @@ func getEventCron_30():
 
     evm_logs: *[]EventLogParamResult
     meta_contract_result: *MetaContractResult
+    cron_datas: *CronResult
+
+    datas2: *EventLogParamResult
 
     if results.success:  
-      for result <- results.crons:
+      cron_length <- MyOp3.array_length(results.crons)
+
+      for result <- results.crons par:
+        cron_datas <<- result
+
         from_block = Node.get_cron_tx_latest_block(result.address, result.chain, result.topic)
         from_block_hex = FevmJsonRpc.decimal_to_hex(from_block)
         if result.token_type == "erc1155":
@@ -64,16 +74,18 @@ func getEventCron_30():
           for llog <- log par:
             log_data = Node.deserialize_fork(llog.data)
             if log_data.data != "":
-              forks = FevmJsonRpc.decode_abi(["string", "bytes"], log_data.data)
+              if log_data.data != "00":
+                forks = FevmJsonRpc.decode_abi(["string", "bytes"], log_data.data)
 
-              -- parsing Minted event log (data_key, data)
-              if MyOp.array_length(forks) == 2:
-                metaContract <- Node.get_meta_contract_by_id(result.meta_contract_id)
-                MetaContract metaContract.meta.meta_contract_id
-                meta_result <- MetaContract.on_mint(metaContract.meta, forks[0], log_data.token_id, forks[1])
+                -- parsing Minted event log (data_key, data)
+                if MyOp.array_length(forks) == 2:
+                  metaContract <- Node.get_meta_contract_by_id(result.meta_contract_id)
+                  MetaContract metaContract.meta.meta_contract_id
+                  meta_result <- MetaContract.on_mint(metaContract.meta, forks[0], log_data.token_id, forks[1])
 
-                if meta_result.result:
-                  Node.set_metadata_cron(forks[0], meta_result.result, meta_result.metadatas)
-                  Node.send_cron_tx(result.cron_id, forks[0], llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
-            datas <<- llog
+                  if meta_result.result:
+                    Node.set_metadata_cron(forks[0], meta_result.result, meta_result.metadatas)
+                    Node.send_cron_tx(result.cron_id, forks[0], llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
+              datas <<- llog
           join datas[n-1]
+      join cron_datas[cron_length-1]
