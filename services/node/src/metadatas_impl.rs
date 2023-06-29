@@ -10,12 +10,11 @@ impl Storage {
         let table_schema = format!(
             "
             CREATE TABLE IF NOT EXISTS {} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                hash TEXT PRIMARY KEY UNIQUE,
                 data_key TEXT not null,
                 alias varchar(255),
                 cid TEXT null,
-                public_key TEXT not null,
-                UNIQUE(data_key, public_key, alias)
+                public_key TEXT not null
             );",
             METADATAS_TABLE_NAME
         );
@@ -152,9 +151,10 @@ impl Storage {
 
 pub fn read(statement: &Statement) -> Result<Metadata, ServiceError> {
     Ok(Metadata {
-        data_key: statement.read::<String>(1)?,
-        alias: statement.read::<String>(2)?,
-        cid: statement.read::<String>(3)?,
-        public_key: statement.read::<String>(4)?,
+        hash: statement.read::<String>(1)?,
+        data_key: statement.read::<String>(2)?,
+        alias: statement.read::<String>(3)?,
+        cid: statement.read::<String>(4)?,
+        public_key: statement.read::<String>(5)?,
     })
 }
