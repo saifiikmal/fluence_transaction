@@ -32,8 +32,9 @@ impl Storage {
      */
     pub fn write_metadata(&self, metadata: Metadata) -> Result<(), ServiceError> {
         let s = format!(
-            "insert into {} (data_key, alias, cid, public_key) values ('{}', '{}', '{}', '{}');",
+            "insert into {} (hash, data_key, alias, cid, public_key) values ('{}', '{}', '{}', '{}', '{}');",
             METADATAS_TABLE_NAME,
+            metadata.hash,
             metadata.data_key,
             metadata.alias,
             metadata.cid,
