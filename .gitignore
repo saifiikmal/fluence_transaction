@@ -1,3 +1,6 @@
 /services/target
 /services/.repl_history
 /services/tmp
+
+/builtin-package/*.wasm
+/services/artifacts/*
