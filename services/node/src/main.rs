@@ -42,7 +42,7 @@ use result::{FdbMetadataResult, FdbResult};
 use serde_json::Value;
 use std::time::{SystemTime, UNIX_EPOCH};
 use storage_impl::get_storage;
-use transaction::Transaction;
+use transaction::{Transaction, TransactionQuery, TransactionOrdering, TransactionRequest};
 use types::{IpfsDagGetResult, IpfsDagPutResult};
 use validators::{
     validate_clone, validate_cron, validate_meta_contract, validate_metadata,
@@ -269,6 +269,29 @@ pub fn send_transaction(
 }
 
 #[marine]
+pub fn send_batch_transaction(
+  txs: Vec<TransactionRequest>
+) -> Vec<FdbResult> {
+  let mut results: Vec<FdbResult> = vec![];
+  
+  for tx in txs {
+    let result = send_transaction(
+      tx.data_key, 
+      tx.token_key, 
+      tx.token_id, 
+      tx.alias, 
+      tx.public_key, 
+      tx.signature, 
+      tx.data, 
+      tx.method, 
+      tx.nonce);
+
+      results.push(result);
+  }
+  results
+}
+
+#[marine]
 pub fn send_cron_tx(
     cron_id: i64,
     data_key: String,
@@ -365,7 +388,7 @@ pub fn get_success_transactions(from: i64, to: i64) -> FdbTransactionsResult {
         ts = to
     }
 
-    wrapped_try(|| get_storage()?.get_success_transansactions(from, ts)).into()
+    wrapped_try(|| get_storage()?.get_success_transactions(from, ts)).into()
 }
 
 #[marine]
@@ -415,6 +438,16 @@ pub fn get_meta_contract_by_id(meta_contract_id: String) -> FdbMetaContractResul
 #[marine]
 pub fn get_pending_transactions() -> FdbTransactionsResult {
     wrapped_try(|| get_storage()?.get_pending_transactions()).into()
+}
+
+#[marine]
+pub fn get_transactions(
+  query: Vec<TransactionQuery>,
+  ordering: Vec<TransactionOrdering>,
+  from: u32,
+  to: u32,
+) -> FdbTransactionsResult {
+  wrapped_try(|| get_storage()?.get_transactions(query, ordering, from, to)).into()
 }
 
 #[marine]

@@ -23,6 +23,20 @@ pub struct Transaction {
     pub token_id: String,
 }
 
+#[marine]
+#[derive(Debug, Default)]
+pub struct TransactionRequest {
+  pub data_key: String,
+  pub token_key: String,
+  pub token_id: String,
+  pub alias: String,
+  pub public_key: String,
+  pub signature: String,
+  pub data: String,
+  pub method: String,
+  pub nonce: i64,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct TransactionSubset {
     pub hash: String,
@@ -30,6 +44,20 @@ pub struct TransactionSubset {
     pub meta_contract_id: String,
     pub method: String,
     pub value: String,
+}
+
+#[marine]
+#[derive(Debug)]
+pub struct TransactionQuery {
+  pub column: String,
+  pub query: String,
+}
+
+#[marine]
+#[derive(Debug)]
+pub struct TransactionOrdering {
+  pub column: String,
+  pub sort: String,
 }
 
 impl Transaction {
