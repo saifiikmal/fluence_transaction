@@ -18,5 +18,6 @@ libsecp256k1 = "0.7.1"
 tiny-keccak = "2.0.2"
 ethereum-types = "0.14.1"
 hex = "0.4.3"
+base58 = "0.2"
 
 types = { path = "../types" }
