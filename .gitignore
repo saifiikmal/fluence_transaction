@@ -3,3 +3,4 @@
 /services/tmp
 
 /builtin-package/*.wasm
+/services/artifacts/*
