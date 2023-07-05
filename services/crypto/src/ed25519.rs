@@ -1,10 +1,11 @@
 #![allow(improper_ctypes)]
 
+use base58::FromBase58;
 use ed25519_compact::{PublicKey, Signature};
 
 pub fn verify(public_key: String, signature: String, message: String) -> bool {
-    let p_key_decoded = base64::decode(public_key).unwrap();
-    let sign_decoded = base64::decode(signature).unwrap();
+    let p_key_decoded = public_key.clone().from_base58().unwrap();
+    let sign_decoded = signature.clone().from_base58().unwrap();
 
     let pk: [u8; 32] = p_key_decoded
         .try_into()
