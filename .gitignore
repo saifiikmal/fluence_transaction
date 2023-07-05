@@ -4,3 +4,4 @@
 
 /builtin-package/*.wasm
 /services/artifacts/*
+/services/Cargo.lock
