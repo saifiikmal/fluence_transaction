@@ -111,6 +111,20 @@ impl Storage {
         }
     }
 
+    pub fn update_cron(&self, cron_id: i64, cron: Cron) -> Result<(), ServiceError> {
+      self.connection.execute(format!(
+          "
+        update {}
+        set meta_contract_id = '{}',
+        node_url = '{}'
+        where cron_id = '{}';
+        ",
+          CRON_TABLE_NAME, cron.meta_contract_id, cron.node_url, cron_id
+      ))?;
+
+      Ok(())
+  }
+
     pub fn update_cron_status(&self, cron_id: i64, status: i64) -> Result<(), ServiceError> {
         self.connection.execute(format!(
             "

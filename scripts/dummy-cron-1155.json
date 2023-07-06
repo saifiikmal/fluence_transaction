@@ -1,3 +1,5 @@
 {
+  "pub_key": "0xc20de1a30487ec70fc730866f297f2e2f1e411f7",
+  "signature": "0x96a6156a5488d0fcfbb863ac138e5e5f7d92b68dab63c7e13ee55522a6b60a7c57ffd893de9c80dfb92daaba645cd49ed988810318c79ace307af37b9bdb64051c",
   "data": "{\"address\":\"0x0692f233614802D06e86CBDE6b5D090A9F5d3c10\",\"chain\":\"80001\",\"topic\":\"0x957f358702a4cd1c866fb29aefe080a9a56303adf02d47a081a56707d2d30033\",\"token_type\":\"erc1155\",\"meta_contract_id\":\"58b196f4-2564-4dca-9a6a-f02f8280bf2a\",\"action\":\"create\",\"cron_id\":0,\"status\":0,\"node_url\":\"https://polygon-mumbai.g.alchemy.com/v2/NThx9TtzI_7El4WRoiYZzbSNzymifW5Q\"}"
 }

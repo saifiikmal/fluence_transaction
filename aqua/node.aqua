@@ -66,6 +66,7 @@ data FdbMetadataHistoryResult:
   history: []string
 
 data Metadata:
+  hash: string
   data_key: string
   alias: string
   cid: string

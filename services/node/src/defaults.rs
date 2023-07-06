@@ -12,8 +12,9 @@ pub static STATUS_FAILED: i64 = 2;
 pub static CRON_STATUS_ACTIVE: i64 = 1;
 pub static CRON_STATUS_DISABLE: i64 = 0;
 // CRON ACTION
-pub static CRON_ACTION_CREATE: &str = "create";
-pub static CRON_ACTION_UPDATE_STATUS: &str = "update_status";
+pub const CRON_ACTION_CREATE: &str = "create";
+pub const CRON_ACTION_UPDATE: &str = "update";
+pub const CRON_ACTION_UPDATE_STATUS: &str = "update_status";
 // METHODS
 pub static METHOD_CONTRACT: &str = "contract";
 pub static METHOD_METADATA: &str = "metadata";

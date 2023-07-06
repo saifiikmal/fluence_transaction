@@ -1,0 +1,2 @@
+#! /bin/bash
+aqua run --input ../aqua/validator.aqua --func 'new_transaction_metadata_raw(data_key, token_key, token_id, alias, pub_key, signature, msg, nonce)' --data-path dummy-metadata-raw.json --addr /ip4/127.0.0.1/tcp/9991/ws/p2p/12D3KooWHBG9oaVx4i3vi6c1rSBUm7MLBmyGmmbHoZ23pmjDCnvK
