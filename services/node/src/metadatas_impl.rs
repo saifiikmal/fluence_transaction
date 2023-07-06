@@ -116,7 +116,7 @@ impl Storage {
       let mut limit_str = "".to_string();
 
       if query.len() > 0 {
-        let queries: Vec<String> = query.into_iter().map(|param| format!("{} = '{}'", param.column, param.query)).collect();
+        let queries: Vec<String> = query.into_iter().map(|param| format!("{} {} '{}'", param.column, param.op, param.query)).collect();
 
         query_str = format!("WHERE {}",queries.join(" AND "));
       }

@@ -51,6 +51,7 @@ pub struct TransactionSubset {
 pub struct TransactionQuery {
   pub column: String,
   pub query: String,
+  pub op: String,
 }
 
 #[marine]

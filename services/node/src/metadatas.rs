@@ -54,6 +54,7 @@ pub struct FinalMetadata {
 pub struct MetadataQuery {
   pub column: String,
   pub query: String,
+  pub op: String,
 }
 
 #[marine]

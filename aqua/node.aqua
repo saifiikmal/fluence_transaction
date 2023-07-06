@@ -124,6 +124,7 @@ data MetadataOrdering:
 data MetadataQuery:
   column: string
   query: string
+  op: string
 
 data TransactionOrdering:
   column: string
@@ -132,6 +133,7 @@ data TransactionOrdering:
 data TransactionQuery:
   column: string
   query: string
+  op: string
 
 data TransactionRequest:
   data_key: string
