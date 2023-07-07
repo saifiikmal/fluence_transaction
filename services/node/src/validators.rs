@@ -300,6 +300,7 @@ pub fn validate_cron(transaction_hash: String, data: String) {
       serde_cron.chain.clone(), serde_cron.topic.clone());
 
       let mut cron = Cron::new(
+        transaction.token_key.clone(),
         serde_cron.address,
         serde_cron.topic,
         serde_cron.token_type,
@@ -307,26 +308,32 @@ pub fn validate_cron(transaction_hash: String, data: String) {
         serde_cron.status,
         serde_cron.meta_contract_id,
         serde_cron.node_url,
+        transaction.public_key.clone(),
     );
 
     match result {
-      Ok(_) => {
-        if serde_cron.cron_id > 0 {
-          match serde_cron.action.as_str() {
-            CRON_ACTION_UPDATE => {
-              let _ = storage.update_cron(serde_cron.cron_id, cron);
+      Ok(row) => {
+        if transaction.public_key == row.public_key {
+          if !serde_cron.hash.is_empty() {
+            match serde_cron.action.as_str() {
+              CRON_ACTION_UPDATE => {
+                let _ = storage.update_cron(serde_cron.hash, cron);
+              }
+              CRON_ACTION_UPDATE_STATUS => {
+                let _ = storage.update_cron_status(serde_cron.hash, serde_cron.status);
+              }
+              _ => {
+                status = STATUS_FAILED;
+                error_text = "Invalid cron action".to_string();
+              }
             }
-            CRON_ACTION_UPDATE_STATUS => {
-              let _ = storage.update_cron_status(serde_cron.cron_id, serde_cron.status);
-            }
-            _ => {
-              status = STATUS_FAILED;
-              error_text = "Invalid cron action".to_string();
-            }
+          } else {
+            status = STATUS_FAILED;
+            error_text = format!("Invalid cron hash: {}", serde_cron.hash);
           }
         } else {
           status = STATUS_FAILED;
-          error_text = "Invalid cron id".to_string();
+          error_text = format!("Invalid owner: {}", transaction.public_key);
         }
       }
       Err(ServiceError::RecordNotFound(_)) => {

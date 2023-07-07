@@ -16,11 +16,12 @@ pub struct Transaction {
     pub data: String,
     pub public_key: String,
     pub alias: String,
-    pub timestamp: u64,
+    pub timestamp: i64,
     pub meta_contract_id: String,
     pub method: String,
     pub error_text: String,
     pub token_id: String,
+    pub node_timestamp: u64,
 }
 
 #[marine]
@@ -35,12 +36,13 @@ pub struct TransactionRequest {
   pub data: String,
   pub method: String,
   pub nonce: i64,
+  pub timestamp: i64,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct TransactionSubset {
     pub hash: String,
-    pub timestamp: u64,
+    pub timestamp: i64,
     pub meta_contract_id: String,
     pub method: String,
     pub value: String,
@@ -51,6 +53,7 @@ pub struct TransactionSubset {
 pub struct TransactionQuery {
   pub column: String,
   pub query: String,
+  pub op: String,
 }
 
 #[marine]
@@ -70,23 +73,22 @@ impl Transaction {
         data: String,
         public_key: String,
         alias: String,
-        timestamp: u64,
+        timestamp: i64,
         meta_contract_id: String,
         method: String,
         token_id: String,
+        node_timestamp: u64,
     ) -> Self {
         let hash = Self::generate_hash(
             token_key.clone(),
-            from_peer_id.clone(),
-            host_id.clone(),
             data_key.clone(),
             data.clone(),
             nonce.clone(),
             public_key.clone(),
             alias.clone(),
-            meta_contract_id.clone(),
             method.clone(),
             token_id.clone(),
+            timestamp.clone(),
         );
 
         Self {
@@ -105,37 +107,34 @@ impl Transaction {
             method,
             error_text: "".to_string(),
             token_id,
+            node_timestamp,
         }
     }
 
     pub fn generate_hash(
         token_key: String,
-        from: String,
-        host_id: String,
         data_key: String,
         data: String,
         nonce: i64,
         public_key: String,
         alias: String,
-        meta_contract_id: String,
         method: String,
         token_id: String,
+        timestamp: i64,
     ) -> String {
         let mut hasher = Sha256::new();
         hasher.update(
             format!(
-                "{}{}{}{}{}{}{}{}{}{}{}",
+                "{}{}{}{}{}{}{}{}{}",
                 token_key,
-                from,
-                host_id,
                 data_key,
                 nonce,
                 data,
                 public_key,
                 alias,
-                meta_contract_id,
                 method,
-                token_id
+                token_id,
+                timestamp
             )
             .as_bytes(),
         );

@@ -1,7 +1,8 @@
 module Node declares *
 
 data CronResult:
-  cron_id: i64
+  hash: string
+  token_key: string
   address: string
   topic: string
   token_type: string
@@ -9,6 +10,7 @@ data CronResult:
   status: i64
   meta_contract_id: string
   node_url: string
+  public_key: string
 
 data CronTx:
   hash: string
@@ -25,6 +27,7 @@ data CronTx:
   error_text: string
   token_id: string
   data_key: string
+  token_key: string
 
 data DataTypeFork:
   data: string
@@ -96,11 +99,12 @@ data Transaction:
   data: string
   public_key: string
   alias: string
-  timestamp: u64
+  timestamp: i64
   meta_contract_id: string
   method: string
   error_text: string
   token_id: string
+  node_timestamp: u64
 
 data FdbTransactionResult:
   success: bool
@@ -124,6 +128,7 @@ data MetadataOrdering:
 data MetadataQuery:
   column: string
   query: string
+  op: string
 
 data TransactionOrdering:
   column: string
@@ -132,6 +137,7 @@ data TransactionOrdering:
 data TransactionQuery:
   column: string
   query: string
+  op: string
 
 data TransactionRequest:
   data_key: string
@@ -143,6 +149,7 @@ data TransactionRequest:
   data: string
   method: string
   nonce: i64
+  timestamp: i64
 
 service Node("transaction"):
   bind_meta_contract(transaction_hash: string)  
@@ -165,8 +172,8 @@ service Node("transaction"):
   search_cron_tx(address: string, chain: string, topic: string) -> FdbCronTxsResult
   search_metadatas(query: []MetadataQuery, ordering: []MetadataOrdering, from: u32, to: u32) -> FdbMetadatasResult
   send_batch_transaction(txs: []TransactionRequest) -> []FdbResult
-  send_cron_tx(cron_id: i64, data_key: string, data: string, tx_block_number: u64, tx_hash: string, token_id: string) -> FdbCronTxResult
-  send_transaction(data_key: string, token_key: string, token_id: string, alias: string, public_key: string, signature: string, data: string, method: string, nonce: i64) -> FdbResult
+  send_cron_tx(hash: string, data_key: string, data: string, tx_block_number: u64, tx_hash: string, token_id: string) -> FdbCronTxResult
+  send_transaction(data_key: string, token_key: string, token_id: string, alias: string, public_key: string, signature: string, data: string, method: string, nonce: i64, timestamp: i64) -> FdbResult
   set_clone(transaction_hash: string, meta_contract_id: string, on_metacontract_result: bool, data: string, final_error_msg: string)  
   set_cron(transaction_hash: string, data: string)  
   set_metadata(transaction_hash: string, meta_contract_id: string, on_metacontract_result: bool, metadatas: []FinalMetadata, final_error_msg: string)  

@@ -1,6 +1,7 @@
 use marine_rs_sdk::marine;
 use marine_sqlite_connector::{State, Statement, Value};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use crate::defaults::CRON_STATUS_ACTIVE;
 use crate::{defaults::CRON_TABLE_NAME, storage_impl::Storage};
@@ -8,6 +9,8 @@ use crate::{error::ServiceError, error::ServiceError::InternalError};
 
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct Cron {
+    pub hash: String,
+    pub token_key: String,
     pub address: String,
     pub topic: String,
     pub token_type: String,
@@ -15,26 +18,51 @@ pub struct Cron {
     pub status: i64,
     pub meta_contract_id: String,
     pub node_url: String,
+    pub public_key: String,
 }
 
 impl Cron {
-    pub fn new(address: String, topic: String, token_type: String, chain: String, status: i64, meta_contract_id: String, node_url: String) -> Self {
-        Self {
-            address,
-            topic,
-            token_type,
-            chain,
-            status,
-            meta_contract_id,
-            node_url,
-        }
+    pub fn new(token_key: String, address: String, topic: String, token_type: String, chain: String, status: i64, meta_contract_id: String, node_url: String, public_key: String) -> Self {
+      let hash = Self::generate_hash(address.clone(), topic.clone(), chain.clone());
+
+      Self {
+          hash,
+          token_key,
+          address,
+          topic,
+          token_type,
+          chain,
+          status,
+          meta_contract_id,
+          node_url,
+          public_key,
+      }
+    }
+
+    pub fn generate_hash(
+        address: String,
+        topic: String,
+        chain: String,
+    ) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(
+            format!(
+                "{}{}{}",
+                address,
+                topic,
+                chain,
+            )
+            .as_bytes(),
+        );
+        bs58::encode(hasher.finalize()).into_string()
     }
 }
 
 #[marine]
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct CronResult {
-    pub cron_id: i64,
+    pub hash: String,
+    pub token_key: String,
     pub address: String,
     pub topic: String,
     pub token_type: String,
@@ -42,12 +70,13 @@ pub struct CronResult {
     pub status: i64,
     pub meta_contract_id: String,
     pub node_url: String,
+    pub public_key: String,
 }
 
 #[derive(Deserialize)]
 pub struct SerdeCron {
     pub action: String,
-    pub cron_id: i64,
+    pub hash: String,
     pub address: String,
     pub topic: String,
     pub token_type: String,
@@ -55,6 +84,7 @@ pub struct SerdeCron {
     pub status: i64,
     pub meta_contract_id: String,
     pub node_url: String,
+    pub public_key: String,
 }
 
 impl Storage {
@@ -62,7 +92,8 @@ impl Storage {
         let table_schema = format!(
             "
         CREATE TABLE IF NOT EXISTS {} (
-          	cron_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            hash TEXT PRIMARY KEY UNIQUE,
+            token_key varchar(255) not null,
             address varchar(255) not null,
             token_type varchar(255) not null,
             chain varchar(255) not null,
@@ -71,7 +102,7 @@ impl Storage {
       meta_contract_id varchar(255) null,
       node_url text null,
       last_processed_block integer not null default(0),
-			UNIQUE(address, chain, topic)
+      public_key TEXT not null
         );",
             CRON_TABLE_NAME
         );
@@ -88,8 +119,10 @@ impl Storage {
      */
     pub fn write_cron(&self, cron: Cron) -> Result<(), ServiceError> {
         let s = format!(
-            "insert into {} (address, token_type, chain, topic, status, last_processed_block, meta_contract_id, node_url) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
+            "insert into {} (hash, token_key, address, token_type, chain, topic, status, last_processed_block, meta_contract_id, node_url, public_key) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
             CRON_TABLE_NAME,
+            cron.hash,
+            cron.token_key,
             cron.address,
             cron.token_type,
             cron.chain,
@@ -98,6 +131,7 @@ impl Storage {
             0,
             cron.meta_contract_id,
             cron.node_url,
+            cron.public_key,
         );
 
         let result = self.connection.execute(s);
@@ -111,45 +145,45 @@ impl Storage {
         }
     }
 
-    pub fn update_cron(&self, cron_id: i64, cron: Cron) -> Result<(), ServiceError> {
+    pub fn update_cron(&self, hash: String, cron: Cron) -> Result<(), ServiceError> {
       self.connection.execute(format!(
           "
         update {}
         set meta_contract_id = '{}',
         node_url = '{}'
-        where cron_id = '{}';
+        where hash = '{}';
         ",
-          CRON_TABLE_NAME, cron.meta_contract_id, cron.node_url, cron_id
+          CRON_TABLE_NAME, cron.meta_contract_id, cron.node_url, hash
       ))?;
 
       Ok(())
   }
 
-    pub fn update_cron_status(&self, cron_id: i64, status: i64) -> Result<(), ServiceError> {
+    pub fn update_cron_status(&self, hash: String, status: i64) -> Result<(), ServiceError> {
         self.connection.execute(format!(
             "
           update {}
           set status = '{}'
-          where cron_id = '{}';
+          where hash = '{}';
           ",
-            CRON_TABLE_NAME, status, cron_id
+            CRON_TABLE_NAME, status, hash
         ))?;
 
         Ok(())
     }
 
-    pub fn get_cron_by_id(&self, cron_id: i64) -> Result<CronResult, ServiceError> {
+    pub fn get_cron_by_hash(&self, hash: String) -> Result<CronResult, ServiceError> {
         let mut statement = self
             .connection
-            .prepare(f!("SELECT * FROM {CRON_TABLE_NAME} WHERE cron_id = ?"))?;
+            .prepare(f!("SELECT * FROM {CRON_TABLE_NAME} WHERE hash = ?"))?;
 
-        statement.bind(1, &Value::Integer(cron_id.clone()))?;
+        statement.bind(1, &Value::String(hash.clone()))?;
 
         if let State::Row = statement.next()? {
             read(&statement)
         } else {
             Err(ServiceError::RecordNotFound(f!(
-                "cron not found - cron_id: {cron_id}"
+                "cron not found - hash: {hash}"
             )))
         }
     }
@@ -210,13 +244,15 @@ impl Storage {
 
 pub fn read(statement: &Statement) -> Result<CronResult, ServiceError> {
     Ok(CronResult {
-        cron_id: statement.read::<i64>(0)?,
-        address: statement.read::<String>(1)?,
-        token_type: statement.read::<String>(2)?,
-        chain: statement.read::<String>(3)?,
-        topic: statement.read::<String>(4)?,
-        status: statement.read::<i64>(5)?,
-        meta_contract_id: statement.read::<String>(6)?,
-        node_url: statement.read::<String>(7)?,
+        hash: statement.read::<String>(0)?,
+        token_key: statement.read::<String>(1)?,
+        address: statement.read::<String>(2)?,
+        token_type: statement.read::<String>(3)?,
+        chain: statement.read::<String>(4)?,
+        topic: statement.read::<String>(5)?,
+        status: statement.read::<i64>(6)?,
+        meta_contract_id: statement.read::<String>(7)?,
+        node_url: statement.read::<String>(8)?,
+        public_key: statement.read::<String>(9)?,
     })
 }

@@ -52,26 +52,32 @@ func getPendingTransactions_3600():
 func new_transaction_metadata(msg: string, count: i64) -> FdbResult:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    result <- Node.send_transaction("1", "11", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0x9239334cca0d0c7e4eb424fa4604f2c3f6d16c34b466f27ddad0a00fd4f11b581fecf9dc82f6e20e14a2977dcf80d1b72dcbb6592b46977f72afb976e34f9d7e1b", msg, "metadata", count)
+    clock <- Node.get_node_clock()
+    result <- Node.send_transaction("1", "11", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0x9239334cca0d0c7e4eb424fa4604f2c3f6d16c34b466f27ddad0a00fd4f11b581fecf9dc82f6e20e14a2977dcf80d1b72dcbb6592b46977f72afb976e34f9d7e1b", msg, "metadata", count, clock.timestamp)
   <- result
 
 func new_transaction_metadata_raw(data_key: string, token_key: string, token_id: string, 
   alias: string, pub_key: string, signature: string, msg: string, nonce: i64) -> FdbResult:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    result <- Node.send_transaction(data_key, token_key, token_id, alias, pub_key, signature, msg, "metadata", nonce)
+    clock <- Node.get_node_clock()
+    result <- Node.send_transaction(data_key, token_key, token_id, alias, pub_key, signature, msg, "metadata", nonce, clock.timestamp)
   <- result
 
 func new_transaction_contract(count: i64) -> FdbResult:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    rst <- Node.send_transaction("", "d3e11c7cb6fa0937191eac31bda2038d74128b5ced00343d698f90d86d725e29", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0xa91de8fe216170108d41bc8cd78864202b04921cb41efa6814ea61dad4d24e806d7050e5551bcd5eb78fbd10c5785af5fef6a9a20231f93bd4f2ccb2111cd2ba1c", "07c2f595-706a-4dee-9983-dd4334bc877d", "contract", count)
+    clock <- Node.get_node_clock()
+
+    rst <- Node.send_transaction("", "d3e11c7cb6fa0937191eac31bda2038d74128b5ced00343d698f90d86d725e29", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0xa91de8fe216170108d41bc8cd78864202b04921cb41efa6814ea61dad4d24e806d7050e5551bcd5eb78fbd10c5785af5fef6a9a20231f93bd4f2ccb2111cd2ba1c", "07c2f595-706a-4dee-9983-dd4334bc877d", "contract", count, clock.timestamp)
   <- rst
 
 func new_transaction_cron(pub_key: string, signature: string, data: string, count: i64) -> FdbResult:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    rst <- Node.send_transaction("", "", "", "", pub_key, signature, data, "cron", count)
+    clock <- Node.get_node_clock()
+
+    rst <- Node.send_transaction("", "d3e11c7cb6fa0937191eac31bda2038d74128b5ced00343d698f90d86d725e29", "", "", pub_key, signature, data, "cron", count, clock.timestamp)
   <- rst
 
 func pending_txs() -> FdbTransactionsResult:
@@ -134,18 +140,18 @@ func processCron():
 
                   if meta_result.result:
                     Node.set_metadata_cron(forks[0], meta_result.result, meta_result.metadatas)
-                    Node.send_cron_tx(result.cron_id, forks[0], llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
+                    Node.send_cron_tx(result.hash, forks[0], llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
               datas <<- llog
               datas2 <<- llog
           join datas[n-1]
       join cron_datas[cron_length-1]
 
-func send_cron_tx(cron_id: i64) -> FdbCronTxResult:
+func send_cron_tx(hash: string) -> FdbCronTxResult:
   
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
 
-    result <- Node.send_cron_tx(cron_id, "123", "data", 0, "0x0", "1")
+    result <- Node.send_cron_tx(hash, "123", "data", 0, "0x0", "1")
   <- result
 
 func get_cron_tx_latest_block() -> u64:
