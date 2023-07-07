@@ -24,7 +24,8 @@ impl Storage {
                 meta_contract_id TEXT,
                 method TEXT NOT NULL,
                 nonce INTEGER NOT NULL,
-                token_id TEXT
+                token_id TEXT,
+                node_timestamp INTEGER NOT NULL
             );",
             TRANSACTIONS_TABLE_NAME
         );
@@ -38,7 +39,7 @@ impl Storage {
 
     pub fn write_transaction(&self, transaction: Transaction) -> Result<String, ServiceError> {
         let s = format!(
-            "insert into {} (hash, token_key, token_id, from_peer_id, host_id, status, data_key, data, public_key, alias, timestamp,meta_contract_id, method, error_text, nonce) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
+            "insert into {} (hash, token_key, token_id, from_peer_id, host_id, status, data_key, data, public_key, alias, timestamp,meta_contract_id, method, error_text, nonce, node_timestamp) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
             TRANSACTIONS_TABLE_NAME,
             transaction.hash,
             transaction.token_key,
@@ -54,7 +55,8 @@ impl Storage {
             transaction.meta_contract_id,
             transaction.method,
             transaction.error_text,
-            transaction.nonce
+            transaction.nonce,
+            transaction.node_timestamp,
         );
 
         let result = self.connection.execute(s);
@@ -135,7 +137,7 @@ impl Storage {
       
         ordering_str = format!("ORDER BY {}",orders.join(", "));
       } else {
-        ordering_str = format!("ORDER BY timestamp DESC");
+        ordering_str = format!("ORDER BY node_timestamp DESC");
       }
       if to > 0 {
         limit_str = format!("LIMIT {},{}", from, to);
@@ -194,11 +196,12 @@ pub fn read(statement: &Statement) -> Result<Transaction, ServiceError> {
         data: statement.read::<String>(6)?,
         public_key: statement.read::<String>(7)?,
         alias: statement.read::<String>(8)?,
-        timestamp: statement.read::<i64>(9)? as u64,
+        timestamp: statement.read::<i64>(9)?,
         error_text: statement.read::<String>(10)?,
         meta_contract_id: statement.read::<String>(11)?,
         method: statement.read::<String>(12)?,
         nonce: statement.read::<i64>(13)?,
         token_id: statement.read::<String>(14)?,
+        node_timestamp: statement.read::<i64>(15)? as u64,
     })
 }

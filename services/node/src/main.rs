@@ -86,6 +86,7 @@ pub fn send_transaction(
     data: String,
     method: String,
     nonce: i64,
+    timestamp: i64,
 ) -> FdbResult {
     let mut meta_contract_id = "".to_string();
     let mut error: Option<ServiceError> = None;
@@ -239,7 +240,7 @@ pub fn send_transaction(
     let cp = marine_rs_sdk::get_call_parameters();
 
     let now = SystemTime::now();
-    let timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+    let node_timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
 
     let mut transaction = Transaction::new(
         token_key,
@@ -250,10 +251,11 @@ pub fn send_transaction(
         data,
         public_key,
         alias,
-        timestamp.as_millis() as u64,
+        timestamp,
         meta_contract_id,
         method,
         token_id,
+        node_timestamp.as_millis() as u64,
     );
 
     if !error.is_none() {
@@ -284,7 +286,9 @@ pub fn send_batch_transaction(
       tx.signature, 
       tx.data, 
       tx.method, 
-      tx.nonce);
+      tx.nonce,
+      tx.timestamp,
+    );
 
       results.push(result);
   }
