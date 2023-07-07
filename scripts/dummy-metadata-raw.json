@@ -6,5 +6,6 @@
   "pub_key": "0xee1f0084514f12e6f02557e43f76669d81ef0022",
   "signature": "0x7f36bfd2080f337053353b9ad734442816b31fdc63d7485a1346e7c431fcc5e44102d51643d1b5bb10862406630f91a43ce8d46a5ff011038ee5c7314b5ff20a1b",
   "msg": "{\"hello\": \"is me\"}",
-  "nonce": 0
+  "nonce": 0,
+  "version": 1
 }

@@ -1,2 +1,2 @@
 #! /bin/bash
-aqua run --input ../aqua/validator.aqua --func 'get_metadatas("1")' --addr /ip4/127.0.0.1/tcp/9992/ws/p2p/12D3KooWRABanQHUn28dxavN9ZS1zZghqoZVAYtFpoN7FdtoGTFv
+aqua run --input ../aqua/validator.aqua --func 'get_metadatas("8896b35ed4f501e6582923f650d7f659817da5cf19a4ef88cb1ea7fd79b81ba3")' --addr /dns4/dev.fluence.0x3zero.com/tcp/19991/wss/p2p/12D3KooWHBG9oaVx4i3vi6c1rSBUm7MLBmyGmmbHoZ23pmjDCnvK

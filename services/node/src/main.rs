@@ -86,7 +86,7 @@ pub fn send_transaction(
     data: String,
     method: String,
     nonce: i64,
-    timestamp: i64,
+    version: i64,
 ) -> FdbResult {
     let mut meta_contract_id = "".to_string();
     let mut error: Option<ServiceError> = None;
@@ -251,11 +251,11 @@ pub fn send_transaction(
         data,
         public_key,
         alias,
-        timestamp,
+        node_timestamp.as_millis() as u64,
         meta_contract_id,
         method,
         token_id,
-        node_timestamp.as_millis() as u64,
+        version,
     );
 
     if !error.is_none() {
@@ -287,7 +287,7 @@ pub fn send_batch_transaction(
       tx.data, 
       tx.method, 
       tx.nonce,
-      tx.timestamp,
+      tx.version,
     );
 
       results.push(result);

@@ -1,2 +1,2 @@
 #! /bin/bash
-aqua run --input ../aqua/validator.aqua --func 'new_transaction_cron(pub_key, signature, data, 1)' --data-path dummy-cron-721.json --addr /dns4/dev.fluence.0x3zero.com/tcp/19991/wss/p2p/12D3KooWHBG9oaVx4i3vi6c1rSBUm7MLBmyGmmbHoZ23pmjDCnvK
+aqua run --input ../aqua/validator.aqua --func 'new_transaction_cron(pub_key, signature, data, 1, 1)' --data-path dummy-cron-721.json --addr /dns4/dev.fluence.0x3zero.com/tcp/19991/wss/p2p/12D3KooWHBG9oaVx4i3vi6c1rSBUm7MLBmyGmmbHoZ23pmjDCnvK

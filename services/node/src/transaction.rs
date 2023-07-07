@@ -16,12 +16,12 @@ pub struct Transaction {
     pub data: String,
     pub public_key: String,
     pub alias: String,
-    pub timestamp: i64,
+    pub timestamp: u64,
     pub meta_contract_id: String,
     pub method: String,
     pub error_text: String,
     pub token_id: String,
-    pub node_timestamp: u64,
+    pub version: i64,
 }
 
 #[marine]
@@ -36,13 +36,13 @@ pub struct TransactionRequest {
   pub data: String,
   pub method: String,
   pub nonce: i64,
-  pub timestamp: i64,
+  pub version: i64,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct TransactionSubset {
     pub hash: String,
-    pub timestamp: i64,
+    pub timestamp: u64,
     pub meta_contract_id: String,
     pub method: String,
     pub value: String,
@@ -73,11 +73,11 @@ impl Transaction {
         data: String,
         public_key: String,
         alias: String,
-        timestamp: i64,
+        timestamp: u64,
         meta_contract_id: String,
         method: String,
         token_id: String,
-        node_timestamp: u64,
+        version: i64,
     ) -> Self {
         let hash = Self::generate_hash(
             token_key.clone(),
@@ -88,7 +88,7 @@ impl Transaction {
             alias.clone(),
             method.clone(),
             token_id.clone(),
-            timestamp.clone(),
+            version.clone(),
         );
 
         Self {
@@ -107,7 +107,7 @@ impl Transaction {
             method,
             error_text: "".to_string(),
             token_id,
-            node_timestamp,
+            version,
         }
     }
 
@@ -120,7 +120,7 @@ impl Transaction {
         alias: String,
         method: String,
         token_id: String,
-        timestamp: i64,
+        version: i64,
     ) -> String {
         let mut hasher = Sha256::new();
         hasher.update(
@@ -134,7 +134,7 @@ impl Transaction {
                 alias,
                 method,
                 token_id,
-                timestamp
+                version
             )
             .as_bytes(),
         );
