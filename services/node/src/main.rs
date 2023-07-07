@@ -191,14 +191,14 @@ pub fn send_transaction(
                             }
                         }
                     } else {
-                        if serde_cron.cron_id <= 0
+                        if serde_cron.hash.is_empty()
                             || (serde_cron.status != CRON_STATUS_ACTIVE
                                 && serde_cron.status != CRON_STATUS_DISABLE)
                         {
                             error =
                                 Some(ServiceError::InvalidDataFormatForMethodType(method.clone()))
                         } else {
-                            let result = storage.get_cron_by_id(serde_cron.cron_id);
+                            let result = storage.get_cron_by_hash(serde_cron.hash);
                             match result {
                                 Ok(_) => {}
                                 Err(e) => error = Some(e),
@@ -293,7 +293,7 @@ pub fn send_batch_transaction(
 
 #[marine]
 pub fn send_cron_tx(
-    cron_id: i64,
+    hash: String,
     data_key: String,
     data: String,
     tx_block_number: u64,
@@ -307,7 +307,7 @@ pub fn send_cron_tx(
     let mut cron_tx = CronTx::default();
     let storage = get_storage().expect("Database non existance");
 
-    let cron = storage.get_cron_by_id(cron_id);
+    let cron = storage.get_cron_by_hash(hash);
 
     match cron {
         Ok(cron_data) => {
@@ -350,6 +350,7 @@ pub fn send_cron_tx(
                     "".to_string(),
                     token_id,
                     data_key,
+                    cron_data.token_key,
                 );
 
                 let _ = storage.write_cron_tx(cron_tx.clone());

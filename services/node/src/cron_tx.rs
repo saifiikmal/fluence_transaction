@@ -23,6 +23,7 @@ pub struct CronTx {
     pub error_text: String,
     pub token_id: String,
     pub data_key: String,
+    pub token_key: String,
 }
 
 impl CronTx {
@@ -40,13 +41,13 @@ impl CronTx {
       error_text: String,
       token_id: String,
       data_key: String,
+      token_key: String,
     ) -> Self {
       let hash = Self::generate_hash(
         address.clone(),
         topic.clone(),
         token_type.clone(),
         chain.clone(),
-        meta_contract_id.clone(),
         tx_block_number.clone(),
         tx_hash.clone(),
         token_id.clone(),
@@ -66,6 +67,7 @@ impl CronTx {
         error_text,
         token_id,
         data_key,
+        token_key,
       }
     }
 
@@ -74,7 +76,6 @@ impl CronTx {
         topic: String,
         token_type: String,
         chain: String,
-        meta_contract_id: String,
         tx_block_number: u64,
         tx_hash: String,
         token_id: String,
@@ -82,12 +83,11 @@ impl CronTx {
         let mut hasher = Sha256::new();
         hasher.update(
             format!(
-                "{}{}{}{}{}{}{}{}",
+                "{}{}{}{}{}{}{}",
                 address,
                 topic,
                 token_type,
                 chain,
-                meta_contract_id,
                 tx_block_number,
                 tx_hash,
                 token_id
@@ -117,6 +117,7 @@ impl Storage {
           error_text TEXT NULL,
           token_id TEXT NULL,
           data_key TEXT NULL,
+          token_key TEXT NULL,
           UNIQUE(address, chain, topic, tx_hash)
       );",
           CRON_TX_TABLE_NAME
@@ -148,8 +149,9 @@ impl Storage {
           data,
           error_text,
           token_id,
-          data_key
-        ) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
+          data_key,
+          token_key
+        ) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
         CRON_TX_TABLE_NAME,
         cron.hash,
         cron.address,
@@ -164,7 +166,8 @@ impl Storage {
         cron.data,
         cron.error_text,
         cron.token_id,
-        cron.data_key
+        cron.data_key,
+        cron.token_key,
     );
 
     let result = self.connection.execute(s);
@@ -278,5 +281,6 @@ pub fn read(statement: &Statement) -> Result<CronTx, ServiceError> {
       error_text: statement.read::<String>(11)?,
       token_id: statement.read::<String>(12)?,
       data_key: statement.read::<String>(13)?,
+      token_key: statement.read::<String>(14)?,
   })
 }

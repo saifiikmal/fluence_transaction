@@ -134,18 +134,18 @@ func processCron():
 
                   if meta_result.result:
                     Node.set_metadata_cron(forks[0], meta_result.result, meta_result.metadatas)
-                    Node.send_cron_tx(result.cron_id, forks[0], llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
+                    Node.send_cron_tx(result.hash, forks[0], llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
               datas <<- llog
               datas2 <<- llog
           join datas[n-1]
       join cron_datas[cron_length-1]
 
-func send_cron_tx(cron_id: i64) -> FdbCronTxResult:
+func send_cron_tx(hash: string) -> FdbCronTxResult:
   
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
 
-    result <- Node.send_cron_tx(cron_id, "123", "data", 0, "0x0", "1")
+    result <- Node.send_cron_tx(hash, "123", "data", 0, "0x0", "1")
   <- result
 
 func get_cron_tx_latest_block() -> u64:
