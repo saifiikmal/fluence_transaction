@@ -152,10 +152,10 @@ impl Storage {
 
 pub fn read(statement: &Statement) -> Result<Metadata, ServiceError> {
     Ok(Metadata {
-        hash: statement.read::<String>(1)?,
-        data_key: statement.read::<String>(2)?,
-        alias: statement.read::<String>(3)?,
-        cid: statement.read::<String>(4)?,
-        public_key: statement.read::<String>(5)?,
+        hash: statement.read::<String>(0)?,
+        data_key: statement.read::<String>(1)?,
+        alias: statement.read::<String>(2)?,
+        cid: statement.read::<String>(3)?,
+        public_key: statement.read::<String>(4)?,
     })
 }

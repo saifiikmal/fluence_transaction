@@ -177,3 +177,9 @@ func send_batch_txs(txs: []TransactionRequest) -> []FdbResult:
     Node NODE_SERVICE_ID
     results <- Node.send_batch_transaction(txs)
   <- results
+
+func get_metadatas(data_key: string) -> FdbMetadatasResult:
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    result <- Node.get_metadatas(data_key)
+  <- result
