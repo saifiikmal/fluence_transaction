@@ -1,5 +1,5 @@
 {
   "pub_key": "0xc20de1a30487ec70fc730866f297f2e2f1e411f7",
   "signature": "0xab9b96a17876551244b94cc2b4f1c31dd618a57beff0377f108b09185a3d63892f274a17ab28feb4627aed2427e4684954192953e49304b0b81a85d7c4ed69071b",
-  "data": "{\"address\":\"0xf44DB7bB5719C79b7483028ea62182DB8E624B10\",\"chain\":\"80001\",\"topic\":\"0x957f358702a4cd1c866fb29aefe080a9a56303adf02d47a081a56707d2d30033\",\"token_type\":\"erc721\",\"meta_contract_id\":\"07c2f595-706a-4dee-9983-dd4334bc877d\",\"action\":\"create\",\"cron_id\":0,\"status\":0,\"node_url\":\"https://polygon-mumbai.g.alchemy.com/v2/NThx9TtzI_7El4WRoiYZzbSNzymifW5Q\"}"
+  "data": "{\"address\":\"0xf44DB7bB5719C79b7483028ea62182DB8E624B10\",\"chain\":\"80001\",\"topic\":\"0x957f358702a4cd1c866fb29aefe080a9a56303adf02d47a081a56707d2d30033\",\"token_type\":\"erc721\",\"meta_contract_id\":\"07c2f595-706a-4dee-9983-dd4334bc877d\",\"action\":\"create\",\"hash\":\"\",\"status\":0,\"node_url\":\"https://polygon-mumbai.g.alchemy.com/v2/NThx9TtzI_7El4WRoiYZzbSNzymifW5Q\"}"
 }
