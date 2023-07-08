@@ -137,7 +137,7 @@ impl Storage {
       
         ordering_str = format!("ORDER BY {}",orders.join(", "));
       } else {
-        ordering_str = format!("ORDER BY node_timestamp DESC");
+        ordering_str = format!("ORDER BY timestamp DESC");
       }
       if to > 0 {
         limit_str = format!("LIMIT {},{}", from, to);
