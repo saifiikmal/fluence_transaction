@@ -1,5 +1,6 @@
 {
+  "token_key": "d3e11c7cb6fa0937191eac31bda2038d74128b5ced00343d698f90d86d725e29",
   "pub_key": "0xc20de1a30487ec70fc730866f297f2e2f1e411f7",
-  "signature": "0xab9b96a17876551244b94cc2b4f1c31dd618a57beff0377f108b09185a3d63892f274a17ab28feb4627aed2427e4684954192953e49304b0b81a85d7c4ed69071b",
-  "data": "{\"address\":\"0xf44DB7bB5719C79b7483028ea62182DB8E624B10\",\"chain\":\"80001\",\"topic\":\"0x957f358702a4cd1c866fb29aefe080a9a56303adf02d47a081a56707d2d30033\",\"token_type\":\"erc721\",\"meta_contract_id\":\"07c2f595-706a-4dee-9983-dd4334bc877d\",\"action\":\"create\",\"hash\":\"\",\"status\":0,\"node_url\":\"https://polygon-mumbai.g.alchemy.com/v2/NThx9TtzI_7El4WRoiYZzbSNzymifW5Q\"}"
+  "signature": "0x01b5ce3546d03be9568123b960a5a26434e4c908581020389223a77177c1261a669d31d52e1360e2ea62b664150c63ed9ae219a379aaffd2ea5dfd530012e9f51c",
+  "data": "{\"address\":\"0xf44DB7bB5719C79b7483028ea62182DB8E624B10\",\"chain\":\"80001\",\"topic\":\"0x957f358702a4cd1c866fb29aefe080a9a56303adf02d47a081a56707d2d30033\",\"token_type\":\"erc721\",\"meta_contract_id\":\"78f3e2ca-d54c-4d69-91fe-e81afe59c574\",\"action\":\"update\",\"hash\":\"2\",\"status\":0,\"node_url\":\"https://polygon-mumbai.g.alchemy.com/v2/NThx9TtzI_7El4WRoiYZzbSNzymifW5Q\"}"
 }

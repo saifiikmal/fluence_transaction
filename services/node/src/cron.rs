@@ -84,7 +84,6 @@ pub struct SerdeCron {
     pub status: i64,
     pub meta_contract_id: String,
     pub node_url: String,
-    pub public_key: String,
 }
 
 impl Storage {
