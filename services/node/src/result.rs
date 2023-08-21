@@ -180,11 +180,11 @@ impl From<Result<MetaContract, ServiceError>> for FdbMetaContractResult {
 pub struct FdbCronsResult {
     pub success: bool,
     pub err_msg: String,
-    pub crons: Vec<CronResult>,
+    pub crons: Vec<Cron>,
 }
 
-impl From<Result<Vec<CronResult>, ServiceError>> for FdbCronsResult {
-    fn from(result: Result<Vec<CronResult>, ServiceError>) -> Self {
+impl From<Result<Vec<Cron>, ServiceError>> for FdbCronsResult {
+    fn from(result: Result<Vec<Cron>, ServiceError>) -> Self {
         match result {
             Ok(crons) => Self {
                 success: true,

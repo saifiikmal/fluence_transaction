@@ -14,7 +14,7 @@ service MyOp2("op"):
   array_length(results: []EventLogParamResult) -> i64
 
 service MyOp3("op"):
-  array_length(results: []CronResult) -> i64
+  array_length(results: []Cron) -> i64
 
 data EvmLogParam:
   to: string
@@ -32,13 +32,13 @@ func validateTransaction(hash: string):
     if tx.transaction.method == "metadata":
       metaContract <- Node.get_meta_contract(tx.transaction.token_key)
       if metaContract.success:
-        metadatasResult <- Node.get_metadatas(tx.transaction.data_key)
+        metadatasResult <- Node.get_metadatas(tx.transaction.data_key, "")
         MetaContract metaContract.meta.meta_contract_id
         metaContractResult <- MetaContract.on_execute(metaContract.meta, metadatasResult.metadatas, tx.transaction)
         Node.set_metadata(hash, metaContract.meta.meta_contract_id, metaContractResult.result, metaContractResult.metadatas, metaContractResult.error_string)
 
     if tx.transaction.method == "cron":
-      Node.set_cron(hash, tx.transaction.data)
+      Node.set_cron(hash)
 
 func getPendingTransactions_3600():
   on HOST_PEER_ID:
@@ -49,32 +49,12 @@ func getPendingTransactions_3600():
       for tx <- result.transactions:
         validateTransaction(tx.hash)
 
-func new_transaction_metadata(msg: string, count: i64, version: i64) -> FdbResult:
+func publish(request: TransactionRequest) -> FdbResult:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    result <- Node.send_transaction("1", "11", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0x9239334cca0d0c7e4eb424fa4604f2c3f6d16c34b466f27ddad0a00fd4f11b581fecf9dc82f6e20e14a2977dcf80d1b72dcbb6592b46977f72afb976e34f9d7e1b", msg, "metadata", count, version)
+    -- result <- Node.publish("1", "11", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0x9239334cca0d0c7e4eb424fa4604f2c3f6d16c34b466f27ddad0a00fd4f11b581fecf9dc82f6e20e14a2977dcf80d1b72dcbb6592b46977f72afb976e34f9d7e1b", msg, "metadata", count, version)
+    result <- Node.publish(request)
   <- result
-
-func new_transaction_metadata_raw(data_key: string, token_key: string, token_id: string, 
-  alias: string, pub_key: string, signature: string, msg: string, nonce: i64, version: i64) -> FdbResult:
-  on HOST_PEER_ID:
-    Node NODE_SERVICE_ID
-    result <- Node.send_transaction(data_key, token_key, token_id, alias, pub_key, signature, msg, "metadata", nonce, version)
-  <- result
-
-func new_transaction_contract(count: i64, version: i64) -> FdbResult:
-  on HOST_PEER_ID:
-    Node NODE_SERVICE_ID
-
-    rst <- Node.send_transaction("", "22554c0693972d304646548b90ab240e9eb68c56ef0d1141fdf9d42f26af6c6e", "", "", "0xc20de1a30487ec70fc730866f297f2e2f1e411f7", "0x222a18b1f7a69bdb4eb32393bb5eea6cfa54fea6c9a6982696ff4b4486cfd874624113d40ba1f2e7d56401e7e70f841921c80addc59e23e0c2aca9dd0ac8261f1c", "8ea1e9bb-3113-4d04-bf02-cb92afa6d424", "contract", count, version)
-  <- rst
-
-func new_transaction_cron(token_key: string, pub_key: string, signature: string, data: string, count: i64, version: i64) -> FdbResult:
-  on HOST_PEER_ID:
-    Node NODE_SERVICE_ID
-
-    rst <- Node.send_transaction("", token_key, "", "", pub_key, signature, data, "cron", count, version)
-  <- rst
 
 func pending_txs() -> FdbTransactionsResult:
   on HOST_PEER_ID:
@@ -85,7 +65,7 @@ func pending_txs() -> FdbTransactionsResult:
 func success_txs(f: i64, t: i64) -> FdbTransactionsResult:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    result <- Node.get_success_transactions(f, t)
+    result <- Node.get_complete_transactions(f, t)
   <- result
 
 func get_txs(query: []TransactionQuery, ordering: []TransactionOrdering, from: u32, to: u32) -> FdbTransactionsResult:
@@ -101,7 +81,7 @@ func processCron():
 
     evm_logs: *[]EventLogParamResult
     meta_contract_result: *MetaContractResult
-    cron_datas: *CronResult
+    cron_datas: *Cron
 
     datas2: *EventLogParamResult
 
@@ -135,7 +115,7 @@ func processCron():
                   meta_result <- MetaContract.on_mint(metaContract.meta, forks[0], log_data.token_id, forks[1])
 
                   if meta_result.result:
-                    Node.set_metadata_cron(forks[0], meta_result.result, meta_result.metadatas)
+                    Node.set_metadata_cron(metaContract.meta, forks[0], meta_result.result, meta_result.metadatas)
                     Node.send_cron_tx(result.hash, forks[0], llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
               datas <<- llog
               datas2 <<- llog
@@ -168,16 +148,16 @@ func search_metadatas(query: []MetadataQuery, ordering: []MetadataOrdering, from
     result <- Node.search_metadatas(query, ordering, from, to)
   <- result   
 
-func send_batch_txs(txs: []TransactionRequest) -> []FdbResult:
+func publish_batch(txs: []TransactionRequest) -> []FdbResult:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    results <- Node.send_batch_transaction(txs)
+    results <- Node.publish_batch(txs)
   <- results
 
-func get_metadatas(data_key: string) -> FdbMetadatasResult:
+func get_metadatas(data_key: string, version: string) -> FdbMetadatasResult:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    result <- Node.get_metadatas(data_key)
+    result <- Node.get_metadatas(data_key, version)
   <- result
 
 func get_crons() -> FdbCronsResult:

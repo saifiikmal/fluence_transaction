@@ -3,11 +3,13 @@ use marine_sqlite_connector::{State, Statement, Value};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::defaults::CRON_STATUS_ACTIVE;
+use crate::defaults::{CRON_STATUS_DISABLE, CRON_STATUS_ENABLE};
+use crate::storage_impl::{RQLiteResult, Row};
 use crate::{defaults::CRON_TABLE_NAME, storage_impl::Storage};
 use crate::{error::ServiceError, error::ServiceError::InternalError};
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[marine]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Cron {
     pub hash: String,
     pub token_key: String,
@@ -48,9 +50,9 @@ impl Cron {
         hasher.update(
             format!(
                 "{}{}{}",
+                chain,
                 address,
                 topic,
-                chain,
             )
             .as_bytes(),
         );
@@ -82,7 +84,7 @@ pub struct SerdeCron {
     pub token_type: String,
     pub chain: String,
     pub status: i64,
-    pub meta_contract_id: String,
+    // pub meta_contract_id: String,
     pub node_url: String,
 }
 
@@ -97,16 +99,16 @@ impl Storage {
             token_type varchar(255) not null,
             chain varchar(255) not null,
             topic TEXT null,
-			status INTEGER not null,
-      meta_contract_id varchar(255) null,
-      node_url text null,
-      last_processed_block integer not null default(0),
-      public_key TEXT not null
-        );",
+            status INTEGER not null,
+            meta_contract_id varchar(255) null,
+            node_url text null,
+            last_processed_block integer not null default(0),
+            public_key TEXT not null
+        )",
             CRON_TABLE_NAME
         );
 
-        let result = self.connection.execute(table_schema);
+        let result = Storage::execute(table_schema);
 
         if let Err(error) = result {
             println!("create_meta_contract_table error: {}", error);
@@ -118,7 +120,7 @@ impl Storage {
      */
     pub fn write_cron(&self, cron: Cron) -> Result<(), ServiceError> {
         let s = format!(
-            "insert into {} (hash, token_key, address, token_type, chain, topic, status, last_processed_block, meta_contract_id, node_url, public_key) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
+            "insert into {} (hash, token_key, address, token_type, chain, topic, status, last_processed_block, meta_contract_id, node_url, public_key) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')",
             CRON_TABLE_NAME,
             cron.hash,
             cron.token_key,
@@ -133,7 +135,59 @@ impl Storage {
             cron.public_key,
         );
 
-        let result = self.connection.execute(s);
+        let result = Storage::execute(s);
+
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                log::info!("{}", e.to_string());
+                Err(InternalError(e.to_string()))
+            }
+        }
+    }
+    pub fn cron_disable(&self, meta_contract_id: String) -> Result<(), ServiceError> {
+        let s = format!(
+            "
+          update {}
+          set status = '{}'
+          where meta_contract_id = '{}';
+          ",
+            CRON_TABLE_NAME, CRON_STATUS_DISABLE, meta_contract_id
+        );
+
+        Storage::execute(s);
+
+        Ok(())
+    }
+
+    pub fn cron_enable(&self, meta_contract_id: String) -> Result<(), ServiceError> {
+        let s = format!(
+            "
+          update {}
+          set status = '{}'
+          where meta_contract_id = '{}';
+          ",
+            CRON_TABLE_NAME, CRON_STATUS_ENABLE, meta_contract_id
+        );
+
+        Storage::execute(s);
+
+        Ok(())
+    }
+
+
+    pub fn update_cron(&self, hash: String, cron: Cron) -> Result<(), ServiceError> {
+      let statement = format!(
+        "
+          update {}
+          set meta_contract_id = '{}',
+          node_url = '{}'
+          where hash = '{}';
+          ",
+            CRON_TABLE_NAME, cron.meta_contract_id, cron.node_url, hash
+        );
+
+        let result = Storage::execute(statement);
 
         match result {
             Ok(_) => Ok(()),
@@ -144,46 +198,38 @@ impl Storage {
         }
     }
 
-    pub fn update_cron(&self, hash: String, cron: Cron) -> Result<(), ServiceError> {
-      self.connection.execute(format!(
-          "
-        update {}
-        set meta_contract_id = '{}',
-        node_url = '{}'
-        where hash = '{}';
-        ",
-          CRON_TABLE_NAME, cron.meta_contract_id, cron.node_url, hash
-      ))?;
-
-      Ok(())
-  }
 
     pub fn update_cron_status(&self, hash: String, status: i64) -> Result<(), ServiceError> {
-        self.connection.execute(format!(
-            "
-          update {}
-          set status = '{}'
-          where hash = '{}';
-          ",
-            CRON_TABLE_NAME, status, hash
-        ))?;
+        let statement = format!(
+          "
+            update {}
+            set status = '{}'
+            where hash = '{}';
+            ",
+              CRON_TABLE_NAME, status, hash
+          );
 
-        Ok(())
+          let result = Storage::execute(statement);
+
+          match result {
+              Ok(_) => Ok(()),
+              Err(e) => {
+                  log::info!("{}", e.to_string());
+                  Err(InternalError(e.to_string()))
+              }
+          }
     }
 
-    pub fn get_cron_by_hash(&self, hash: String) -> Result<CronResult, ServiceError> {
-        let mut statement = self
-            .connection
-            .prepare(f!("SELECT * FROM {CRON_TABLE_NAME} WHERE hash = ?"))?;
+    pub fn get_cron_by_hash(&self, hash: String) -> Result<Cron, ServiceError> {
+        let statement = format!("SELECT * FROM {} WHERE hash = '{}'",CRON_TABLE_NAME, hash);
 
-        statement.bind(1, &Value::String(hash.clone()))?;
-
-        if let State::Row = statement.next()? {
-            read(&statement)
-        } else {
-            Err(ServiceError::RecordNotFound(f!(
-                "cron not found - hash: {hash}"
-            )))
+        let result = Storage::read(statement)?;
+        match read(result) {
+            Ok(metas) => metas
+                .first()
+                .cloned()
+                .ok_or_else(|| ServiceError::RecordNotFound("No record found".to_string())),
+            Err(e) => Err(e),
         }
     }
 
@@ -192,66 +238,72 @@ impl Storage {
         address: String,
         chain: String,
         topic: String,
-    ) -> Result<CronResult, ServiceError> {
-        let mut statement = self.connection.prepare(f!(
-            "SELECT * FROM {CRON_TABLE_NAME} WHERE address = ? AND chain = ? AND topic = ?"
-        ))?;
+    ) -> Result<Cron, ServiceError> {
+        let statement = format!(
+            "SELECT * FROM {} WHERE address = '{}' AND chain = '{}' AND topic = '{}'",
+            CRON_TABLE_NAME, address, chain, topic
+        );
 
-        statement.bind(1, &Value::String(address.clone()))?;
-        statement.bind(2, &Value::String(chain.clone()))?;
-        statement.bind(3, &Value::String(topic.clone()))?;
-
-        if let State::Row = statement.next()? {
-            read(&statement)
-        } else {
-            Err(ServiceError::RecordNotFound(f!(
-                "cron not found - address: {address}, chain: {chain}, topic: {topic}"
-            )))
+        let result = Storage::read(statement)?;
+        match read(result) {
+            Ok(metas) => metas
+                .first()
+                .cloned()
+                .ok_or_else(|| ServiceError::RecordNotFound("No record found".to_string())),
+            Err(e) => Err(e),
         }
     }
 
-    pub fn get_active_crons(&self) -> Result<Vec<CronResult>, ServiceError> {
-        let mut statement = self
-            .connection
-            .prepare(f!("SELECT * FROM {CRON_TABLE_NAME} WHERE status = ?"))?;
-
-        statement.bind(1, &Value::Integer(CRON_STATUS_ACTIVE))?;
-
-        let mut crons = Vec::new();
-
-        while let State::Row = statement.next()? {
-            crons.push(read(&statement)?);
+    pub fn get_cron_by_meta_contract_id(&self, meta_contract_id: String) -> Result<Cron, ServiceError> {
+        let statement = f!("SELECT * FROM {CRON_TABLE_NAME} WHERE meta_contract_id = '{meta_contract_id}'");
+        let result = Storage::read(statement)?;
+        match read(result) {
+            Ok(metas) => metas
+                .first()
+                .cloned()
+                .ok_or_else(|| ServiceError::RecordNotFound("No record found".to_string())),
+            Err(e) => Err(e),
         }
-
-        Ok(crons)
     }
 
-    pub fn get_all_crons(&self) -> Result<Vec<CronResult>, ServiceError> {
-        let mut statement = self
-            .connection
-            .prepare(f!("SELECT * FROM {CRON_TABLE_NAME}"))?;
+    pub fn get_enabled_crons(&self) -> Result<Vec<Cron>, ServiceError> {
+        let statement = format!("SELECT * FROM {} WHERE status = {}", CRON_TABLE_NAME, CRON_STATUS_ENABLE);
 
-        let mut crons = Vec::new();
-
-        while let State::Row = statement.next()? {
-            crons.push(read(&statement)?);
+        let result = Storage::read(statement)?;
+        match read(result) {
+            Ok(metas) => Ok(metas),
+            Err(e) => Err(e),
         }
+    }
 
-        Ok(crons)
+    pub fn get_all_crons(&self) -> Result<Vec<Cron>, ServiceError> {
+        let statement = format!("SELECT * FROM {}", CRON_TABLE_NAME);
+
+        let result = Storage::read(statement)?;
+        match read(result) {
+            Ok(metas) => Ok(metas),
+            Err(e) => Err(e),
+        }
     }
 }
 
-pub fn read(statement: &Statement) -> Result<CronResult, ServiceError> {
-    Ok(CronResult {
-        hash: statement.read::<String>(0)?,
-        token_key: statement.read::<String>(1)?,
-        address: statement.read::<String>(2)?,
-        token_type: statement.read::<String>(3)?,
-        chain: statement.read::<String>(4)?,
-        topic: statement.read::<String>(5)?,
-        status: statement.read::<i64>(6)?,
-        meta_contract_id: statement.read::<String>(7)?,
-        node_url: statement.read::<String>(8)?,
-        public_key: statement.read::<String>(9)?,
-    })
+pub fn read(result: RQLiteResult) -> Result<Vec<Cron>, ServiceError> {
+  let mut txs = Vec::new();
+
+  if result.rows.is_some() {
+    for row in result.rows.unwrap() {
+        match row {
+            Row::Cron(metadata) => txs.push(metadata),
+            _ => {
+                return Err(ServiceError::InternalError(format!(
+                    "Invalid data format: {}",
+                    CRON_TABLE_NAME
+                )))
+            }
+        }
+    }
+  }
+
+  Ok(txs)
 }
+

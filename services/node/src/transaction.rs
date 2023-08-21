@@ -4,39 +4,39 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 #[marine]
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Transaction {
     pub hash: String,
-    pub token_key: String,
+    pub method: String,
+    pub meta_contract_id: String,
     pub data_key: String,
-    pub nonce: i64,
-    pub from_peer_id: String,
-    pub host_id: String,
-    pub status: i64,
+    pub token_key: String,
     pub data: String,
     pub public_key: String,
     pub alias: String,
     pub timestamp: u64,
-    pub meta_contract_id: String,
-    pub method: String,
-    pub error_text: String,
+    pub chain_id: String,
+    pub token_address: String,
     pub token_id: String,
-    pub version: i64,
+    pub version: String,
+    pub status: i64,
+    pub mcdata: String,
 }
 
 #[marine]
 #[derive(Debug, Default)]
 pub struct TransactionRequest {
-  pub data_key: String,
-  pub token_key: String,
-  pub token_id: String,
+  pub meta_contract_id: String,
   pub alias: String,
   pub public_key: String,
   pub signature: String,
   pub data: String,
   pub method: String,
-  pub nonce: i64,
-  pub version: i64,
+  pub chain_id: String,
+  pub token_address: String,
+  pub token_id: String,
+  pub version: String,
+  pub mcdata: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -63,78 +63,93 @@ pub struct TransactionOrdering {
   pub sort: String,
 }
 
+#[marine]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct TransactionReceipt {
+    pub hash: String,
+    pub meta_contract_id: String,
+    pub status: i64,
+    pub timestamp: u64,
+    pub error_text: String,
+    pub data: String,
+}
+
 impl Transaction {
     pub fn new(
+        meta_contract_id: String,
         token_key: String,
-        from_peer_id: String,
-        host_id: String,
         data_key: String,
-        nonce: i64,
         data: String,
         public_key: String,
         alias: String,
         timestamp: u64,
-        meta_contract_id: String,
         method: String,
+        chain_id: String,
+        token_address: String,
         token_id: String,
-        version: i64,
+        version: String,
+        mcdata: String,
+        status: i64,
+        previous_data: String,
     ) -> Self {
-        let hash = Self::generate_hash(
-            token_key.clone(),
-            data_key.clone(),
-            data.clone(),
-            nonce.clone(),
-            public_key.clone(),
-            alias.clone(),
-            method.clone(),
-            token_id.clone(),
-            version.clone(),
-        );
+      let hash = Self::generate_hash(
+          meta_contract_id.clone(),
+          token_key.clone(),
+          data_key.clone(),
+          data.clone(),
+          public_key.clone(),
+          alias.clone(),
+          method.clone(),
+          version.clone(),
+          mcdata.clone(),
+          previous_data,
+      );
 
-        Self {
-            hash,
-            token_key,
-            from_peer_id,
-            host_id,
-            status: STATUS_PENDING,
-            data_key,
-            nonce,
-            data,
-            public_key,
-            alias,
-            timestamp,
-            meta_contract_id,
-            method,
-            error_text: "".to_string(),
-            token_id,
-            version,
-        }
+      Self {
+          hash,
+          method,
+          meta_contract_id,
+          data_key,
+          token_key,
+          data,
+          public_key,
+          alias,
+          timestamp,
+          chain_id,
+          token_address,
+          token_id,
+          version,
+          status,
+          mcdata,
+      }
     }
 
     pub fn generate_hash(
+        meta_contract_id: String,
         token_key: String,
         data_key: String,
         data: String,
-        nonce: i64,
         public_key: String,
         alias: String,
         method: String,
-        token_id: String,
-        version: i64,
+        version: String,
+        mcdata: String,
+        previous_content: String,
     ) -> String {
         let mut hasher = Sha256::new();
         hasher.update(
             format!(
-                "{}{}{}{}{}{}{}{}{}",
+                "{}{}{}{}{}{}{}{}{}{}",
+                meta_contract_id,
                 token_key,
                 data_key,
-                nonce,
                 data,
                 public_key,
                 alias,
                 method,
-                token_id,
-                version
+                version,
+                mcdata,
+                previous_content
             )
             .as_bytes(),
         );
