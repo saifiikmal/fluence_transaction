@@ -16,7 +16,7 @@ service MyOp2("op"):
   array_length(results: []EventLogParamResult) -> i64
 
 service MyOp3("op"):
-  array_length(results: []CronResult) -> i64
+  array_length(results: []Cron) -> i64
   
 func validateTransaction(hash: string):
   on HOST_PEER_ID:
@@ -26,15 +26,23 @@ func validateTransaction(hash: string):
       Node.bind_meta_contract(hash)
     
     if tx.transaction.method == "metadata":
-      metaContract <- Node.get_meta_contract(tx.transaction.token_key)
+      metaContract <- Node.get_meta_contract_by_id(tx.transaction.meta_contract_id)
       if metaContract.success:
-        metadatasResult <- Node.get_metadatas(tx.transaction.data_key)
+        metadatasResult <- Node.get_metadatas(tx.transaction.data_key, "")
         MetaContract metaContract.meta.meta_contract_id
         metaContractResult <- MetaContract.on_execute(metaContract.meta, metadatasResult.metadatas, tx.transaction)
         Node.set_metadata(hash, metaContract.meta.meta_contract_id, metaContractResult.result, metaContractResult.metadatas, metaContractResult.error_string)
-    
+
+        if tx.transaction.token_key != "":
+          metaContractToken <- Node.get_meta_contract(tx.transaction.token_key)
+          if metaContractToken.success:
+            metadatasTokenResult <- Node.get_metadatas(tx.transaction.data_key, "")
+            MetaContract metaContractToken.meta.meta_contract_id
+            metaContractTokenResult <- MetaContract.on_execute(metaContractToken.meta, metadatasTokenResult.metadatas, tx.transaction)
+            Node.set_metadata(hash, metaContractToken.meta.meta_contract_id, metaContractTokenResult.result, metaContractTokenResult.metadatas, metaContractTokenResult.error_string)
+
     if tx.transaction.method == "cron":
-      Node.set_cron(hash, tx.transaction.data)
+      Node.set_cron(hash)
 
 func getPendingTransactions_5():
   on HOST_PEER_ID:
@@ -50,7 +58,7 @@ func getEventCron_30():
 
     evm_logs: *[]EventLogParamResult
     meta_contract_result: *MetaContractResult
-    cron_datas: *CronResult
+    cron_datas: *Cron
 
     datas2: *EventLogParamResult
 
@@ -84,7 +92,7 @@ func getEventCron_30():
                   meta_result <- MetaContract.on_mint(metaContract.meta, forks[0], log_data.token_id, forks[1])
 
                   if meta_result.result:
-                    Node.set_metadata_cron(forks[0], meta_result.result, meta_result.metadatas)
+                    Node.set_metadata_cron(metaContract.meta, forks[0], meta_result.result, meta_result.metadatas)
                     Node.send_cron_tx(result.hash, forks[0], llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
               datas <<- llog
           join datas[n-1]

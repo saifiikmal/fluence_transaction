@@ -1,0 +1,15 @@
+{
+  "request": {
+    "meta_contract_id": "097936b0-34e7-419b-b1ba-7a188c4866b8",
+    "alias": "",
+    "public_key": "0xee1f0084514f12e6f02557e43f76669d81ef0022",
+    "signature": "0x749ba69cc01f84b2f3435b5a528b3265269d008fe8a188024bd7ea6bb1a46cc079d071f0ee7af22921f191c2624a400a1e88fcfb9fbc72951449f2fccb6dd2171b",
+    "data": "097936b0-34e7-419b-b1ba-7a188c4866b8",
+    "method": "contract",
+    "chain_id": "",
+    "token_address": "",
+    "token_id": "",
+    "version": "",
+    "mcdata": ""
+  }
+}

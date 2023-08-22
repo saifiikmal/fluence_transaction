@@ -68,14 +68,17 @@ pub fn main() {
         .with_log_level(log::LevelFilter::Info)
         .build()
         .unwrap();
+}
 
-    let storage = get_storage();
-    storage.create_meta_contract_table();
-    storage.create_transactions_table();
-    storage.create_metadatas_table();
-    storage.create_cron_table();
-    storage.create_cron_tx_table();
-    storage.create_transaction_receipt_table();
+#[marine]
+pub fn init() {
+  let storage = get_storage();
+  storage.create_meta_contract_table();
+  storage.create_transactions_table();
+  storage.create_metadatas_table();
+  storage.create_cron_table();
+  storage.create_cron_tx_table();
+  storage.create_transaction_receipt_table();
 }
 
 #[marine]

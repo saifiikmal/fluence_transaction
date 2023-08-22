@@ -175,6 +175,7 @@ service Node("transaction"):
   get_pending_transactions() -> FdbTransactionsResult
   get_transaction(hash: string) -> FdbTransactionResult
   get_transactions(query: []TransactionQuery, ordering: []TransactionOrdering, from: u32, to: u32) -> FdbTransactionsResult
+  init()  
   publish(tx_request: TransactionRequest) -> FdbResult
   publish_batch(txs: []TransactionRequest) -> []FdbResult
   search_cron_tx(address: string, chain: string, topic: string) -> FdbCronTxsResult

@@ -31,5 +31,5 @@ pub static METHOD_CRON: &str = "cron";
 pub static ENCRYPTION_TYPE_SECP256K1: &str = "secp256k1";
 pub static ENCRYPTION_TYPE_ED25519: &str = "ed25519";
 // RQLITE ENDPOINTS
-pub static SQL_EXECUTE: &str = "http://localhost:4101/db/execute";
-pub static SQL_QUERY: &str = "http://localhost:4101/db/query?associative";
+pub static SQL_EXECUTE: &str = "http://172.17.0.1:4101/db/execute";
+pub static SQL_QUERY: &str = "http://172.17.0.1:4101/db/query?associative";

@@ -2,7 +2,7 @@ import "node.aqua"
 import "meta-contract.aqua"
 import "fevm_json_rpc.aqua"
 
-const NODE_SERVICE_ID = "transaction"
+const NODE_SERVICE_ID = "47dc2cad-de42-4d71-933a-60d4a170ea71"
 const CONTRACT_SERVICE_ID = "8755a3a2-7e91-4e9e-8885-53955e927ebe"
 const ERC1155_ABI_URL = "https://ipfs.xfero.io/ipfs/QmSiZUtqkbEZPPFMN9ZihSbPskNxqkjBpAfB2NmwLv11N7?filename=CollaBeatNFT-abi.json"
 const ERC721_ABI_URL = "https://ipfs.xfero.io/ipfs/QmWmkDbQ9KA6yLR8C8TuavLwyk2g6TfHyixG5gwTRem3Nw?filename=ERC721_0x3Zero-abi.json"
@@ -21,6 +21,11 @@ data EvmLogParam:
   token_id: string
   data: string
 
+func init():
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    Node.init()
+
 func validateTransaction(hash: string):
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
@@ -30,12 +35,20 @@ func validateTransaction(hash: string):
       Node.bind_meta_contract(hash)
     
     if tx.transaction.method == "metadata":
-      metaContract <- Node.get_meta_contract(tx.transaction.token_key)
+      metaContract <- Node.get_meta_contract_by_id(tx.transaction.meta_contract_id)
       if metaContract.success:
         metadatasResult <- Node.get_metadatas(tx.transaction.data_key, "")
         MetaContract metaContract.meta.meta_contract_id
         metaContractResult <- MetaContract.on_execute(metaContract.meta, metadatasResult.metadatas, tx.transaction)
         Node.set_metadata(hash, metaContract.meta.meta_contract_id, metaContractResult.result, metaContractResult.metadatas, metaContractResult.error_string)
+
+        if tx.transaction.token_key != "":
+          metaContractToken <- Node.get_meta_contract(tx.transaction.token_key)
+          if metaContractToken.success:
+            metadatasTokenResult <- Node.get_metadatas(tx.transaction.data_key, "")
+            MetaContract metaContractToken.meta.meta_contract_id
+            metaContractTokenResult <- MetaContract.on_execute(metaContractToken.meta, metadatasTokenResult.metadatas, tx.transaction)
+            Node.set_metadata(hash, metaContractToken.meta.meta_contract_id, metaContractTokenResult.result, metaContractTokenResult.metadatas, metaContractTokenResult.error_string)
 
     if tx.transaction.method == "cron":
       Node.set_cron(hash)
@@ -158,6 +171,12 @@ func get_metadatas(data_key: string, version: string) -> FdbMetadatasResult:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
     result <- Node.get_metadatas(data_key, version)
+  <- result
+
+func get_meta_contract(token_key: string) -> FdbMetaContractResult:
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    result <- Node.get_meta_contract(token_key)
   <- result
 
 func get_crons() -> FdbCronsResult:

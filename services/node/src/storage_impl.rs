@@ -74,7 +74,7 @@ impl Storage {
             format!(r#"["{}"]"#, query.replace("\n", "")),
         ];
 
-        log::info!("read: {:?}", args);
+        // log::info!("read: {:?}", args);
 
         let result = curl(args);
 
