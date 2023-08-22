@@ -1,10 +1,11 @@
+use std::time::{UNIX_EPOCH, SystemTime};
+
 use crate::block::Block;
 use crate::cron::{Cron, SerdeCron};
 use crate::data_types::DataTypeClone;
-use crate::defaults::{CRON_ACTION_CREATE, CRON_ACTION_UPDATE, CRON_ACTION_UPDATE_STATUS, CRON_STATUS_ACTIVE};
-use crate::metadatas::{FinalMetadata, Metadata};
-use crate::transaction::TransactionSubset;
-use crate::{defaults::STATUS_FAILED, defaults::STATUS_SUCCESS};
+use crate::defaults::{CRON_ACTION_CREATE, CRON_ACTION_UPDATE, CRON_ACTION_UPDATE_STATUS, CRON_STATUS_ENABLE, RECEIPT_STATUS_FAILED, RECEIPT_STATUS_SUCCESS, STATUS_DONE, STATUS_FAILED};
+use crate::metadatas::{FinalMetadata, Metadata, SerdeMetadata};
+use crate::transaction::{TransactionSubset, TransactionReceipt};
 use crate::{error::ServiceError, error::ServiceError::*};
 use crate::{get, put_block};
 use crate::{meta_contract::MetaContract, storage_impl::get_storage};
@@ -17,21 +18,22 @@ pub fn validate_meta_contract(transaction_hash: String) {
     let mut is_update = false;
     let mut error: Option<ServiceError> = None;
 
-    let storage = get_storage().expect("Internal error to database connector");
+    let storage = get_storage();
 
     let mut transaction = storage.get_transaction(transaction_hash).unwrap().clone();
 
-    let sm_result = storage.get_meta_contract(transaction.token_key.clone());
+    let sm_result = storage.get_meta_contract_by_id_and_pk(transaction.meta_contract_id.clone(), transaction.public_key.clone());
 
+    let mut is_update = false;
     match sm_result {
         Ok(contract) => {
-            if transaction.public_key != contract.public_key {
-                error = Some(InvalidOwner(f!("{transaction.public_key}")))
+            if transaction.public_key == contract.public_key {
+                // error = Some(RecordFound(f!("{transaction.public_key}")))
+                is_update = true;
             } else {
                 current_meta_contract = contract;
                 current_meta_contract.meta_contract_id = transaction.data.clone();
             }
-            is_update = true;
         }
         Err(ServiceError::RecordNotFound(_)) => {}
         Err(e) => error = Some(e),
@@ -40,19 +42,21 @@ pub fn validate_meta_contract(transaction_hash: String) {
     if error.is_none() {
         let meta_result;
 
-        if !is_update {
-            current_meta_contract = MetaContract {
-                token_key: transaction.token_key.clone(),
-                meta_contract_id: transaction.meta_contract_id.clone(),
-                public_key: transaction.public_key.clone(),
-            };
+        current_meta_contract = MetaContract {
+            token_key: transaction.token_key.clone(),
+            meta_contract_id: transaction.meta_contract_id.clone(),
+            public_key: transaction.public_key.clone(),
+            cid: "".to_string(),
+        };
 
-            meta_result = storage.write_meta_contract(current_meta_contract);
+        if is_update {
+          meta_result = storage.rebind_meta_contract(
+            transaction.token_key.clone(), 
+            transaction.meta_contract_id.clone(), 
+            transaction.public_key.clone(),
+          );
         } else {
-            meta_result = storage.rebind_meta_contract(
-                transaction.token_key.clone(),
-                transaction.meta_contract_id.clone(),
-            );
+          meta_result = storage.write_meta_contract(current_meta_contract);
         }
 
         match meta_result {
@@ -61,19 +65,30 @@ pub fn validate_meta_contract(transaction_hash: String) {
         }
     }
 
+    let mut status;
+    let mut error_text;
+    let now = SystemTime::now();
+    let timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+
     if !error.is_none() {
-        transaction.error_text = error.unwrap().to_string();
-        transaction.status = STATUS_FAILED;
+        error_text = error.unwrap().to_string();
+        status = RECEIPT_STATUS_FAILED;
     } else {
-        transaction.status = STATUS_SUCCESS;
-        transaction.error_text = "".to_string();
+        status = RECEIPT_STATUS_SUCCESS;
+        error_text = "".to_string();
     }
 
-    let _ = storage.update_transaction_status(
-        transaction.hash.clone(),
-        transaction.status.clone(),
-        transaction.error_text.clone(),
-    );
+    let receipt = TransactionReceipt {
+      hash: transaction.hash.clone(),
+      meta_contract_id: transaction.meta_contract_id.clone(),
+      status,
+      timestamp: timestamp.as_millis() as u64,
+      error_text,
+      data: "".to_string(),
+    };
+    storage.write_transaction_receipt(receipt);
+
+    storage.update_transaction_status(transaction.hash.clone(), STATUS_DONE);
 }
 
 /**
@@ -86,29 +101,33 @@ pub fn validate_metadata(
     metadatas: Vec<FinalMetadata>,
     final_error_msg: String,
 ) {
-    let storage = get_storage().expect("Internal error to database connector");
+    let storage = get_storage();
     let mut transaction = storage.get_transaction(transaction_hash).unwrap().clone();
 
+    let mut status = RECEIPT_STATUS_SUCCESS;
+    let mut error_text = "".to_string();
+
     if !on_metacontract_result {
-        transaction.status = STATUS_FAILED;
         if final_error_msg.is_empty() {
-            transaction.error_text = "Metadata not updateable".to_string();
+            error_text = "Metadata not updateable".to_string();
         } else {
-            transaction.error_text = final_error_msg;
+            error_text = final_error_msg;
         }
+        status = RECEIPT_STATUS_FAILED;
     } else {
         for data in metadatas {
-            let result = storage.get_owner_metadata_by_datakey_and_alias(
+            let result = storage.get_owner_metadata(
                 transaction.data_key.clone(),
+                transaction.meta_contract_id.clone(),
                 data.public_key.clone(),
                 data.alias.clone(),
+                transaction.version.clone(),
             );
 
             log::info!("{:?}", result);
 
             match result {
                 Ok(metadata) => {
-                    transaction.status = STATUS_SUCCESS;
 
                     let tx = TransactionSubset {
                         hash: transaction.hash.clone(),
@@ -124,10 +143,18 @@ pub fn validate_metadata(
                         put_block(data.content, metadata.cid, tx_serde, "".to_string(), 0);
                     let content_cid = result_ipfs_dag_put.cid;
 
-                    let _ = storage.update_cid(metadata.data_key, metadata.alias, metadata.public_key, content_cid);
+                    let _ = storage.update_cid(
+                        metadata.data_key, 
+                        metadata.meta_contract_id, 
+                        metadata.alias, 
+                        metadata.public_key, 
+                        content_cid,
+                        metadata.version,
+                    );
+                    
+                    status = RECEIPT_STATUS_SUCCESS;
                 }
                 Err(ServiceError::RecordNotFound(_)) => {
-                    transaction.status = STATUS_SUCCESS;
 
                     let tx = TransactionSubset {
                         hash: transaction.hash.clone(),
@@ -143,46 +170,72 @@ pub fn validate_metadata(
                         put_block(data.content, "".to_string(), tx_serde, "".to_string(), 0);
                     let content_cid = result_ipfs_dag_put.cid;
 
+                    let serde_metadata: Result<SerdeMetadata, serde_json::Error> = serde_json::from_str(&transaction.mcdata.clone());
+
+                    let mut loose;
+                    match serde_metadata {
+                      Ok(sm) => loose = sm.loose,
+                      _ => loose = 1,
+                    }
+
                     let metadata = Metadata::new(
                         transaction.data_key.clone(),
+                        transaction.token_key.clone(),
+                        transaction.meta_contract_id.clone(),
                         data.alias.clone(),
                         content_cid,
                         data.public_key.clone(),
+                        transaction.version.clone(),
+                        loose,
                     );
 
                     let _ = storage.write_metadata(metadata);
+
+                    status = RECEIPT_STATUS_SUCCESS;
                 }
                 Err(e) => {
-                    transaction.error_text = e.to_string();
-                    transaction.status = STATUS_FAILED;
+                    error_text = e.to_string();
+                    status = RECEIPT_STATUS_FAILED;
                 }
             };
         }
     }
 
-    let _ = storage.update_transaction_status(
-        transaction.hash.clone(),
-        transaction.status.clone(),
-        transaction.error_text.clone(),
-    );
+    let now = SystemTime::now();
+    let timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+
+    let receipt = TransactionReceipt {
+      hash: transaction.hash.clone(),
+      meta_contract_id: transaction.meta_contract_id.clone(),
+      status,
+      timestamp: timestamp.as_millis() as u64,
+      error_text,
+      data: "".to_string(),
+    };
+    storage.write_transaction_receipt(receipt);
+
+    storage.update_transaction_status(transaction.hash.clone(), STATUS_DONE);
 }
 
 /**
  * Validated "metadata cron" method type
  */
 pub fn validate_metadata_cron(
+  meta_contract: MetaContract,
   data_key: String,
   on_metacontract_result: bool,
   metadatas: Vec<FinalMetadata>,
 ) {
-  let storage = get_storage().expect("Internal error to database connector");
+  let storage = get_storage();
 
   if on_metacontract_result {
       for data in metadatas {
-          let result = storage.get_owner_metadata_by_datakey_and_alias(
+          let result = storage.get_owner_metadata(
               data_key.clone(),
+              meta_contract.meta_contract_id.clone(),
               data.public_key.clone(),
               data.alias.clone(),
+              "".to_string(),
           );
 
           log::info!("{:?}", result);
@@ -197,9 +250,13 @@ pub fn validate_metadata_cron(
 
                   let metadata = Metadata::new(
                       data_key.clone(),
+                      meta_contract.token_key.clone(),
+                      meta_contract.meta_contract_id.clone(),
                       data.alias.clone(),
                       content_cid,
                       data.public_key.clone(),
+                      "".to_string(),
+                      data.loose.clone(),
                   );
 
                   let _ = storage.write_metadata(metadata);
@@ -221,26 +278,28 @@ pub fn validate_clone(
     data: String,
     final_error_msg: String,
 ) {
-    let storage = get_storage().expect("Internal error to database connector");
+    let storage = get_storage();
     let mut transaction = storage.get_transaction(transaction_hash).unwrap().clone();
 
+    let mut status = RECEIPT_STATUS_FAILED;
+    let mut error_text = "".to_string();
     if !on_metacontract_result {
-        transaction.status = STATUS_FAILED;
+        status = RECEIPT_STATUS_FAILED;
         if final_error_msg.is_empty() {
-            transaction.error_text = "Metadata not forkable".to_string();
+            error_text = "Metadata not forkable".to_string();
         } else {
-            transaction.error_text = final_error_msg;
+            error_text = final_error_msg;
         }
     } else {
         let data_clone: DataTypeClone = serde_json::from_str(&data.clone()).unwrap();
 
-        let origin_metadata = storage
-            .get_owner_metadata_by_datakey_and_alias(
-                data_clone.origin_data_key.clone(),
-                data_clone.origin_public_key.clone(),
-                data_clone.origin_alias.clone(),
-            )
-            .unwrap();
+        let origin_metadata = storage.get_owner_metadata(
+            data_clone.origin_data_key.clone(),
+            data_clone.origin_meta_contract_id.clone(),
+            data_clone.origin_public_key.clone(),
+            data_clone.origin_alias.clone(),
+            data_clone.origin_version.clone(),
+        ).unwrap();
 
         let tx = TransactionSubset {
             hash: transaction.hash.clone(),
@@ -267,34 +326,47 @@ pub fn validate_clone(
 
         let metadata = Metadata::new(
             transaction.data_key.clone(),
+            origin_metadata.token_key.clone(),
+            origin_metadata.meta_contract_id.clone(),
             origin_metadata.alias.clone(),
             result_ipfs_dag_put.cid,
             origin_metadata.public_key.clone(),
+            origin_metadata.version.clone(),
+            origin_metadata.loose.clone(),
         );
 
         let _ = storage.write_metadata(metadata);
 
-        transaction.status = STATUS_SUCCESS;
+        status = RECEIPT_STATUS_SUCCESS;
     }
 
-    let _ = storage.update_transaction_status(
-        transaction.hash.clone(),
-        transaction.status.clone(),
-        transaction.error_text.clone(),
-    );
+    let now = SystemTime::now();
+    let timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+
+    let receipt = TransactionReceipt {
+      hash: transaction.hash.clone(),
+      meta_contract_id: transaction.meta_contract_id.clone(),
+      status,
+      timestamp: timestamp.as_millis() as u64,
+      error_text,
+      data: "".to_string(),
+    };
+    storage.write_transaction_receipt(receipt);
+
+    storage.update_transaction_status(transaction.hash.clone(), STATUS_DONE);
 }
 
 /**
  * Validated "cron" method type
  */
-pub fn validate_cron(transaction_hash: String, data: String) {
-    let mut status = STATUS_SUCCESS;
+pub fn validate_cron(transaction_hash: String) {
+    let mut status = RECEIPT_STATUS_SUCCESS;
     let mut error_text = "".to_string();
 
-    let storage = get_storage().expect("Internal error to database connector");
+    let storage = get_storage();
     let mut transaction = storage.get_transaction(transaction_hash).unwrap().clone();
 
-    let serde_cron: SerdeCron = serde_json::from_str(&data).unwrap();
+    let serde_cron: SerdeCron = serde_json::from_str(&transaction.data).unwrap();
 
     let result = storage.search_cron(serde_cron.address.clone(), 
       serde_cron.chain.clone(), serde_cron.topic.clone());
@@ -306,7 +378,7 @@ pub fn validate_cron(transaction_hash: String, data: String) {
         serde_cron.token_type,
         serde_cron.chain,
         serde_cron.status,
-        serde_cron.meta_contract_id,
+        transaction.meta_contract_id.clone(),
         serde_cron.node_url,
         transaction.public_key.clone(),
     );
@@ -338,7 +410,7 @@ pub fn validate_cron(transaction_hash: String, data: String) {
       }
       Err(ServiceError::RecordNotFound(_)) => {
         if serde_cron.action == CRON_ACTION_CREATE {
-          cron.status = CRON_STATUS_ACTIVE;
+          cron.status = CRON_STATUS_ENABLE;
   
           let _ = storage.write_cron(cron);
         } else {
@@ -352,12 +424,18 @@ pub fn validate_cron(transaction_hash: String, data: String) {
       }
     }
 
-    transaction.status = status;
-    transaction.error_text = error_text;
+    let now = SystemTime::now();
+    let timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
 
-    let _ = storage.update_transaction_status(
-        transaction.hash.clone(),
-        transaction.status.clone(),
-        transaction.error_text.clone(),
-    );
+    let receipt = TransactionReceipt {
+      hash: transaction.hash.clone(),
+      meta_contract_id: transaction.meta_contract_id.clone(),
+      status,
+      timestamp: timestamp.as_millis() as u64,
+      error_text,
+      data: "".to_string(),
+    };
+    storage.write_transaction_receipt(receipt);
+
+    storage.update_transaction_status(transaction.hash.clone(), STATUS_DONE);
 }

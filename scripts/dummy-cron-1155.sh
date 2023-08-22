@@ -1,0 +1,2 @@
+#! /bin/bash
+aqua run --input ../aqua/validator.aqua --func 'publish(request)' --data-path dummy-cron-1155.json --addr /dns4/dev.fluence.0x3zero.com/tcp/19991/wss/p2p/12D3KooWHBG9oaVx4i3vi6c1rSBUm7MLBmyGmmbHoZ23pmjDCnvK

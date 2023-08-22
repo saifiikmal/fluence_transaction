@@ -1,15 +1,15 @@
 {
-  "msg": "{\"hello\": \"is me\"}",
-  "query": [
-    {
-      "column": "data_key",
-      "query": "1a29e8f618eb4ce9b3e9f9c00493b55c31e14a1b3dee6b1b62e5197f9f3836b5"
-    }
-  ],
-  "ordering": [
-    {
-      "column": "id",
-      "sort": "desc"
-    }
-  ]
+  "request": {
+    "meta_contract_id": "f423fb6e-159c-4926-be7f-c4ce169f2dbf",
+    "alias": "",
+    "public_key": "0xee1f0084514f12e6f02557e43f76669d81ef0022",
+    "signature": "0xd9b7657acc838dc7a49b8d11d8b68d3f0d889f29f2d1927ccdd8067f9e0542bb289ce4afc7e714fec34653170c3028611b411e442dc11d5faeef968c2dffa01b1c",
+    "data": "{\"hello\":\"is me\"}",
+    "method": "metadata",
+    "chain_id": "80001",
+    "token_address": "0x0692f233614802D06e86CBDE6b5D090A9F5d3c10",
+    "token_id": "1",
+    "version": "",
+    "mcdata": "{\"loose\":0}"
+  }
 }

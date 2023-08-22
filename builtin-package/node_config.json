@@ -5,5 +5,9 @@
   "mapped_dirs": {
     "tmp": "./tmp"
   },
+  "mounted_binaries":
+  {
+    "curl": "/usr/bin/curl"
+  },
   "logger_enabled": true
 }

@@ -6,16 +6,19 @@ data FinalMetadata:
   public_key: string
   alias: string
   content: string
+  loose: i64
 
 data MetaContract:
   token_key: string
   meta_contract_id: string
   public_key: string
+  cid: string
 
 data MetaContractResult:
   result: bool
   metadatas: []FinalMetadata
   error_string: string
+  loose: i64
 
 service MetaContract("meta-contract"):
   on_clone() -> bool

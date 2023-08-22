@@ -3,7 +3,8 @@
 "mounted_binaries":
 {
   "ipfs": "/usr/bin/ipfs",
-  "bash": "/usr/bin/bash"
+  "bash": "/usr/bin/bash",
+  "curl": "/usr/bin/curl"
 },
 "envs": {
   "/tmp/vault": "./tmp"

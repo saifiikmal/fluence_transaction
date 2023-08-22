@@ -12,7 +12,8 @@
         "logger_enabled": true,
         "mounted_binaries": [
           ["ipfs", "/usr/bin/ipfs"],
-          ["bash", "/usr/bin/bash"]
+          ["bash", "/usr/bin/bash"],
+          ["curl", "/usr/bin/curl"]
         ],
         "envs": [["/tmp/vault", "./tmp"]]
       },
@@ -28,7 +29,10 @@
         "path": "./artifacts/node.wasm",
         "logger_enabled": true,
         "preopened_files": ["./tmp"],
-        "mapped_dirs": [["tmp", "./tmp"]]
+        "mapped_dirs": [["tmp", "./tmp"]],
+        "mounted_binaries": [
+          ["curl", "/usr/bin/curl"]
+        ]
       }
     ]
   }

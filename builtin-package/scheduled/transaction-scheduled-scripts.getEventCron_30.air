@@ -107,7 +107,7 @@
                                       (xor
                                        (match meta_result.$.result! true
                                         (seq
-                                         (call %init_peer_id% ("transaction" "set_metadata_cron") [decode_abi.$.[0]! meta_result.$.result! meta_result.$.metadatas!])
+                                         (call %init_peer_id% ("transaction" "set_metadata_cron") [metaContract.$.meta! decode_abi.$.[0]! meta_result.$.result! meta_result.$.metadatas!])
                                          (call %init_peer_id% ("transaction" "send_cron_tx") [result-0.$.hash! decode_abi.$.[0]! llog-0.$.data! llog-0.$.block_number! llog-0.$.transaction_hash! deserialize_fork.$.token_id!])
                                         )
                                        )

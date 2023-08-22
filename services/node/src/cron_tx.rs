@@ -1,4 +1,5 @@
 use crate::defaults::STATUS_PENDING;
+use crate::storage_impl::{RQLiteResult, Row};
 use crate::{defaults::CRON_TX_TABLE_NAME, storage_impl::Storage};
 use marine_rs_sdk::marine;
 use marine_sqlite_connector::{State, Statement, Value};
@@ -7,7 +8,7 @@ use sha2::{Digest, Sha256};
 use crate::{error::ServiceError, error::ServiceError::InternalError};
 
 #[marine]
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct CronTx {
     pub hash: String,
     pub address: String,
@@ -119,11 +120,11 @@ impl Storage {
           data_key TEXT NULL,
           token_key TEXT NULL,
           UNIQUE(address, chain, topic, tx_hash)
-      );",
+      )",
           CRON_TX_TABLE_NAME
       );
 
-      let result = self.connection.execute(table_schema);
+      let result = Storage::execute(table_schema);
 
       if let Err(error) = result {
           println!("create_cron_tx_table error: {}", error);
@@ -151,7 +152,7 @@ impl Storage {
           token_id,
           data_key,
           token_key
-        ) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
+        ) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')",
         CRON_TX_TABLE_NAME,
         cron.hash,
         cron.address,
@@ -163,14 +164,14 @@ impl Storage {
         cron.tx_block_number,
         cron.tx_hash,
         cron.status,
-        cron.data,
+        Storage::trimmer(serde_json::to_string(&cron.data).unwrap()),
         cron.error_text,
         cron.token_id,
         cron.data_key,
         cron.token_key,
     );
 
-    let result = self.connection.execute(s);
+    let result = Storage::execute(s);
 
     match result {
         Ok(_) => Ok(()),
@@ -186,22 +187,18 @@ impl Storage {
     address: String, 
     chain: String,
     topic: String, ) -> Result<CronTx, ServiceError> {
-    let mut statement = self
-        .connection
-        .prepare(f!("SELECT * FROM {CRON_TX_TABLE_NAME} WHERE 
-                tx_hash = ? and address = ? and chain = ? and topic = ?"))?;
+    let statement = format!("SELECT * FROM {} WHERE 
+        tx_hash = '{}' and address = '{}' and chain = '{}' and topic = '{}'",
+        CRON_TX_TABLE_NAME, transaction_hash, address, chain, topic
+    );
 
-    statement.bind(1, &Value::String(transaction_hash.clone()))?;
-    statement.bind(2, &Value::String(address.clone()))?;
-    statement.bind(3, &Value::String(chain.clone()))?;
-    statement.bind(4, &Value::String(topic.clone()))?;
-
-    if let State::Row = statement.next()? {
-        read(&statement)
-    } else {
-        Err(ServiceError::RecordNotFound(f!(
-            "cron tx not found - transaction_hash: {transaction_hash}"
-        )))
+    let result = Storage::read(statement)?;
+    match read(result) {
+        Ok(metas) => metas
+                .first()
+                .cloned()
+                .ok_or_else(|| ServiceError::RecordNotFound("No record found".to_string())),
+        Err(e) => Err(e),
     }
   }
 
@@ -209,35 +206,31 @@ impl Storage {
     address: String, 
     chain: String,
     topic: String, ) -> Result<CronTx, ServiceError> {
-    let mut statement = self
-        .connection
-        .prepare(f!("SELECT * FROM {CRON_TX_TABLE_NAME} WHERE address = ? and chain = ? and topic = ? order by tx_block_number desc"))?;
+    let statement = format!("SELECT * FROM {} WHERE address = '{}' and chain = '{}' and topic = '{}' order by tx_block_number desc",
+        CRON_TX_TABLE_NAME,
+        address,
+        chain,
+        topic,
+    );
 
-    statement.bind(1, &Value::String(address.clone()))?;
-    statement.bind(2, &Value::String(chain.clone()))?;
-    statement.bind(3, &Value::String(topic.clone()))?;
-
-    if let State::Row = statement.next()? {
-        read(&statement)
-    } else {
-        Err(ServiceError::RecordNotFound(f!(
-            "cron tx not found - address: {address}"
-        )))
+    let result = Storage::read(statement)?;
+    match read(result) {
+        Ok(metas) => metas
+                .first()
+                .cloned()
+                .ok_or_else(|| ServiceError::RecordNotFound("No record found".to_string())),
+        Err(e) => Err(e),
     }
   }
 
   pub fn get_all_cron_txs(&self) -> Result<Vec<CronTx>, ServiceError> {
-    let mut statement = self
-        .connection
-        .prepare(f!("SELECT * FROM {CRON_TX_TABLE_NAME} order by timestamp desc"))?;
+    let statement = format!("SELECT * FROM {} order by timestamp desc", CRON_TX_TABLE_NAME);
 
-    let mut logs = Vec::new();
-
-    while let State::Row = statement.next()? {
-        logs.push(read(&statement)?);
+    let result = Storage::read(statement)?;
+    match read(result) {
+        Ok(metas) => Ok(metas),
+        Err(e) => Err(e),
     }
-
-    Ok(logs)
   }
 
   pub fn search_cron_tx(
@@ -246,41 +239,39 @@ impl Storage {
       chain: String,
       topic: String,
   ) -> Result<Vec<CronTx>, ServiceError> {
-      let mut statement = self.connection.prepare(f!(
-          "SELECT * FROM {CRON_TX_TABLE_NAME} WHERE address = ? AND chain = ? AND topic = ?"
-      ))?;
+      let statement = format!(
+        "SELECT * FROM {} WHERE address = '{}' AND chain = '{}' AND topic = '{}'",
+        CRON_TX_TABLE_NAME,
+        address,
+        chain,
+        topic,
+      );
 
-      statement.bind(1, &Value::String(address.clone()))?;
-      statement.bind(2, &Value::String(chain.clone()))?;
-      statement.bind(3, &Value::String(topic.clone()))?;
-
-      let mut logs = Vec::new();
-
-      while let State::Row = statement.next()? {
-          logs.push(read(&statement)?);
+      let result = Storage::read(statement)?;
+      match read(result) {
+          Ok(metas) => Ok(metas),
+          Err(e) => Err(e),
       }
-
-      Ok(logs)
   }
 
 }
 
-pub fn read(statement: &Statement) -> Result<CronTx, ServiceError> {
-  Ok(CronTx {
-      hash: statement.read::<String>(0)?,
-      address: statement.read::<String>(1)?,
-      token_type: statement.read::<String>(2)?,
-      chain: statement.read::<String>(3)?,
-      topic: statement.read::<String>(4)?,
-      meta_contract_id: statement.read::<String>(5)?,
-      timestamp: statement.read::<i64>(6)? as u64,
-      tx_block_number: statement.read::<i64>(7)? as u64,
-      tx_hash: statement.read::<String>(8)?,
-      status: statement.read::<i64>(9)?,
-      data: statement.read::<String>(10)?,
-      error_text: statement.read::<String>(11)?,
-      token_id: statement.read::<String>(12)?,
-      data_key: statement.read::<String>(13)?,
-      token_key: statement.read::<String>(14)?,
-  })
+pub fn read(result: RQLiteResult) -> Result<Vec<CronTx>, ServiceError> {
+  let mut txs = Vec::new();
+
+  if result.rows.is_some() {
+    for row in result.rows.unwrap() {
+        match row {
+            Row::CronTx(metadata) => txs.push(metadata),
+            _ => {
+                return Err(ServiceError::InternalError(format!(
+                    "Invalid data format: {}",
+                    CRON_TX_TABLE_NAME
+                )))
+            }
+        }
+    }
+  }
+
+  Ok(txs)
 }

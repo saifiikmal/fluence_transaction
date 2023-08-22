@@ -13,6 +13,7 @@ modules_dir = "artifacts/"
     [module.mounted_binaries]
     ipfs = "/usr/local/bin/ipfs"
     bash = "/bin/bash"
+    curl = "/usr/bin/curl"
 
     [module.wasi]
     envs = { "/tmp/vault" = "/tmp" }
@@ -32,3 +33,6 @@ modules_dir = "artifacts/"
     [module.wasi]
     preopened_files = ["/tmp"]
     mapped_dirs = { "tmp" = "/tmp" }
+
+    [module.mounted_binaries]
+    curl = "/usr/bin/curl"

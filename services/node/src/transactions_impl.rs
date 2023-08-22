@@ -1,7 +1,7 @@
-use crate::defaults::{STATUS_PENDING, STATUS_SUCCESS, TRANSACTIONS_TABLE_NAME};
+use crate::defaults::{STATUS_PENDING, TRANSACTIONS_TABLE_NAME, STATUS_DONE};
 use crate::error::ServiceError;
 use crate::error::ServiceError::InternalError;
-use crate::storage_impl::Storage;
+use crate::storage_impl::{RQLiteResult, Row, Storage};
 use crate::transaction::{Transaction, TransactionQuery, TransactionOrdering};
 use marine_sqlite_connector::{State, Statement, Value};
 
@@ -11,26 +11,25 @@ impl Storage {
             "
             CREATE TABLE IF NOT EXISTS {} (
                 hash TEXT PRIMARY KEY UNIQUE,
-                token_key TEXT NOT NULL,
-                data_key TEXT NOT NULL,
-                from_peer_id TEXT NOT NULL,
-                host_id TEXT NOT NULL,
-                status INTEGER NOT NULL,
-                data TEXT NOT NULL,
+                method TEXT NOT NULL,
+                meta_contract_id TEXT,
+                token_key TEXT,
+                data_key TEXT,
+                data TEXT NULL,
                 public_key TEXT NOT NULL,
                 alias TEXT,
                 timestamp INTEGER NOT NULL,
-                error_text TEXT NULL,
-                meta_contract_id TEXT,
-                method TEXT NOT NULL,
-                nonce INTEGER NOT NULL,
+                chain_id TEXT,
+                token_address TEXT,
                 token_id TEXT,
-                version INTEGER NOT NULL
-            );",
+                version varchar(32) NOT NULL,
+                mcdata TEXT NULL,
+                status INTEGER NOT NULL
+            )",
             TRANSACTIONS_TABLE_NAME
         );
 
-        let result = self.connection.execute(table_schema);
+        let result = Storage::execute(table_schema);
 
         if let Err(error) = result {
             println!("create_transactions_table error: {}", error);
@@ -39,27 +38,27 @@ impl Storage {
 
     pub fn write_transaction(&self, transaction: Transaction) -> Result<String, ServiceError> {
         let s = format!(
-            "insert into {} (hash, token_key, token_id, from_peer_id, host_id, status, data_key, data, public_key, alias, timestamp, meta_contract_id, method, error_text, nonce, version) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');",
+            "insert into {} (hash, method, meta_contract_id, token_key, data_key, data, public_key, alias, timestamp, chain_id, token_address, token_id, version, mcdata, status) 
+            values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')",
             TRANSACTIONS_TABLE_NAME,
             transaction.hash,
+            transaction.method,
+            transaction.meta_contract_id,
             transaction.token_key,
-            transaction.token_id,
-            transaction.from_peer_id,
-            transaction.host_id,
-            transaction.status,
             transaction.data_key,
-            transaction.data,
+            Storage::trimmer(serde_json::to_string(&transaction.data).unwrap()),
             transaction.public_key,
             transaction.alias,
             transaction.timestamp,
-            transaction.meta_contract_id,
-            transaction.method,
-            transaction.error_text,
-            transaction.nonce,
+            transaction.chain_id,
+            transaction.token_address,
+            transaction.token_id,
             transaction.version,
+            Storage::trimmer(serde_json::to_string(&transaction.mcdata).unwrap()),
+            transaction.status,
         );
 
-        let result = self.connection.execute(s);
+        let result = Storage::execute(s);
 
         match result {
             Ok(_) => Ok(transaction.hash),
@@ -74,50 +73,47 @@ impl Storage {
         &self,
         hash: String,
         status: i64,
-        error_text: String,
     ) -> Result<(), ServiceError> {
-        self.connection.execute(format!(
+        Storage::execute(format!(
             "
           update {}
-          set status = '{}', error_text = '{}'
+          set status = '{}'
           where hash = '{}';
           ",
-            TRANSACTIONS_TABLE_NAME, status, error_text, hash
+            TRANSACTIONS_TABLE_NAME, status, hash
         ))?;
 
         Ok(())
     }
 
     pub fn get_transaction(&self, hash: String) -> Result<Transaction, ServiceError> {
-        let mut statement = self
-            .connection
-            .prepare(f!("SELECT * FROM {TRANSACTIONS_TABLE_NAME} WHERE hash = ?"))?;
-
-        statement.bind(1, &Value::String(hash.clone()))?;
-
-        if let State::Row = statement.next()? {
-            read(&statement)
-        } else {
-            Err(InternalError(f!(
-                "not found non-host records for given key_hash: {hash}"
-            )))
-        }
+      let statement = format!(
+          "SELECT * FROM {} WHERE hash = '{}'",
+          TRANSACTIONS_TABLE_NAME,
+          hash.clone()
+      );
+      let result = Storage::read(statement)?;
+      // log::info!("get tx: {:?}", result);
+      match read(result) {
+          Ok(metas) => metas
+              .first()
+              .cloned()
+              .ok_or_else(|| ServiceError::RecordNotFound("No record found".to_string())),
+          Err(e) => Err(e),
+      }
     }
 
     pub fn get_pending_transactions(&self) -> Result<Vec<Transaction>, ServiceError> {
-        let mut statement = self.connection.prepare(f!(
-            "SELECT * FROM {TRANSACTIONS_TABLE_NAME} WHERE status = ?"
-        ))?;
-
-        statement.bind(1, &Value::Integer(STATUS_PENDING))?;
-
-        let mut transactions = Vec::new();
-
-        while let State::Row = statement.next()? {
-            transactions.push(read(&statement)?);
-        }
-
-        Ok(transactions)
+      let statement = format!(
+          "SELECT * FROM {} WHERE status = {}",
+          TRANSACTIONS_TABLE_NAME,
+          STATUS_PENDING,
+      );
+      let result = Storage::read(statement)?;
+      match read(result) {
+          Ok(metas) => Ok(metas),
+          Err(e) => Err(e),
+      }
     }
 
     pub fn get_transactions(&self, query: Vec<TransactionQuery>, ordering: Vec<TransactionOrdering>, from: u32, to: u32) -> Result<Vec<Transaction>, ServiceError> {
@@ -146,62 +142,52 @@ impl Storage {
       
       let s = format!("SELECT * FROM {} {} {} {}", TRANSACTIONS_TABLE_NAME, query_str, ordering_str, limit_str);
 
-      log::info!("{}", s.clone());
 
-      let mut statement = self
-      .connection
-      .prepare(s)?;
+      let result = Storage::read(s)?;
 
-
-      let mut transactions = Vec::new();
-
-      while let State::Row = statement.next()? {
-        transactions.push(read(&statement)?);
+      match read(result) {
+          Ok(metas) => Ok(metas),
+          Err(e) => Err(e),
       }
-
-      Ok(transactions)
     }
 
-    pub fn get_success_transactions(
+    pub fn get_complete_transactions(
         &self,
         from: i64,
         to: i64,
     ) -> Result<Vec<Transaction>, ServiceError> {
-        let mut statement = self.connection.prepare(f!(
-            "SELECT * FROM {TRANSACTIONS_TABLE_NAME} WHERE status = ? AND timestamp BETWEEN ? AND ?"
-        ))?;
+        let mut s = format!(
+            "SELECT * FROM {} WHERE status = {} AND timestamp BETWEEN {} AND {}",
+            TRANSACTIONS_TABLE_NAME,
+            STATUS_DONE,
+            from,
+            to,
+        );
 
-        statement.bind(1, &Value::Integer(STATUS_SUCCESS))?;
-        statement.bind(2, &Value::Integer(from))?;
-        statement.bind(3, &Value::Integer(to))?;
-
-        let mut transactions = Vec::new();
-
-        while let State::Row = statement.next()? {
-            transactions.push(read(&statement)?);
+        let result = Storage::read(s)?;
+        match read(result) {
+            Ok(metas) => Ok(metas),
+            Err(e) => Err(e),
         }
-
-        Ok(transactions)
     }
 }
 
-pub fn read(statement: &Statement) -> Result<Transaction, ServiceError> {
-    Ok(Transaction {
-        hash: statement.read::<String>(0)?,
-        token_key: statement.read::<String>(1)?,
-        data_key: statement.read::<String>(2)?,
-        from_peer_id: statement.read::<String>(3)?,
-        host_id: statement.read::<String>(4)?,
-        status: statement.read::<i64>(5)? as i64,
-        data: statement.read::<String>(6)?,
-        public_key: statement.read::<String>(7)?,
-        alias: statement.read::<String>(8)?,
-        timestamp: statement.read::<i64>(9)? as u64,
-        error_text: statement.read::<String>(10)?,
-        meta_contract_id: statement.read::<String>(11)?,
-        method: statement.read::<String>(12)?,
-        nonce: statement.read::<i64>(13)?,
-        token_id: statement.read::<String>(14)?,
-        version: statement.read::<i64>(15)?,
-    })
+pub fn read(result: RQLiteResult) -> Result<Vec<Transaction>, ServiceError> {
+  let mut txs = Vec::new();
+
+  if result.rows.is_some() {
+    for row in result.rows.unwrap() {
+        match row {
+            Row::Transaction(metadata) => txs.push(metadata),
+            _ => {
+                return Err(ServiceError::InternalError(format!(
+                    "Invalid data format: {}",
+                    TRANSACTIONS_TABLE_NAME
+                )))
+            }
+        }
+    }
+  }
+
+  Ok(txs)
 }
