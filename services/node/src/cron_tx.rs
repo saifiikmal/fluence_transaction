@@ -164,7 +164,7 @@ impl Storage {
         cron.tx_block_number,
         cron.tx_hash,
         cron.status,
-        cron.data,
+        Storage::trimmer(serde_json::to_string(&cron.data).unwrap()),
         cron.error_text,
         cron.token_id,
         cron.data_key,
@@ -188,7 +188,7 @@ impl Storage {
     chain: String,
     topic: String, ) -> Result<CronTx, ServiceError> {
     let statement = format!("SELECT * FROM {} WHERE 
-        tx_hash = {} and address = {} and chain = {} and topic = {}",
+        tx_hash = '{}' and address = '{}' and chain = '{}' and topic = '{}'",
         CRON_TX_TABLE_NAME, transaction_hash, address, chain, topic
     );
 
@@ -206,7 +206,7 @@ impl Storage {
     address: String, 
     chain: String,
     topic: String, ) -> Result<CronTx, ServiceError> {
-    let statement = format!("SELECT * FROM {} WHERE address = {} and chain = {} and topic = {} order by tx_block_number desc",
+    let statement = format!("SELECT * FROM {} WHERE address = '{}' and chain = '{}' and topic = '{}' order by tx_block_number desc",
         CRON_TX_TABLE_NAME,
         address,
         chain,
@@ -240,7 +240,7 @@ impl Storage {
       topic: String,
   ) -> Result<Vec<CronTx>, ServiceError> {
       let statement = format!(
-        "SELECT * FROM {} WHERE address = {} AND chain = {} AND topic = {}",
+        "SELECT * FROM {} WHERE address = '{}' AND chain = '{}' AND topic = '{}'",
         CRON_TX_TABLE_NAME,
         address,
         chain,
