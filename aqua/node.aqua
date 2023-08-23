@@ -93,6 +93,19 @@ data FdbMetadatasResult:
 data FdbResult:
   transaction_hash: string
 
+data TransactionReceipt:
+  hash: string
+  meta_contract_id: string
+  status: i64
+  timestamp: u64
+  error_text: string
+  data: string
+
+data FdbTransactionReceiptResult:
+  success: bool
+  err_msg: string
+  receipt: TransactionReceipt
+
 data Transaction:
   hash: string
   method: string
@@ -174,6 +187,7 @@ service Node("transaction"):
   get_node_clock() -> FdbClock
   get_pending_transactions() -> FdbTransactionsResult
   get_transaction(hash: string) -> FdbTransactionResult
+  get_transaction_receipt(hash: string) -> FdbTransactionReceiptResult
   get_transactions(query: []TransactionQuery, ordering: []TransactionOrdering, from: u32, to: u32) -> FdbTransactionsResult
   init()  
   publish(tx_request: TransactionRequest) -> FdbResult

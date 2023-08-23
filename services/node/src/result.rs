@@ -7,7 +7,7 @@ use crate::{
     error::ServiceError,
     meta_contract::MetaContract,
     metadatas::Metadata,
-    transaction::Transaction,
+    transaction::{Transaction, TransactionReceipt},
 };
 
 #[marine]
@@ -67,6 +67,56 @@ impl From<Result<Vec<Transaction>, ServiceError>> for FdbTransactionsResult {
                 success: false,
                 err_msg: err.to_string(),
                 transactions: Vec::new(),
+            },
+        }
+    }
+}
+
+#[marine]
+#[derive(Debug)]
+pub struct FdbTransactionReceiptResult {
+    pub success: bool,
+    pub err_msg: String,
+    pub receipt: TransactionReceipt,
+}
+
+impl From<Result<TransactionReceipt, ServiceError>> for FdbTransactionReceiptResult {
+    fn from(result: Result<TransactionReceipt, ServiceError>) -> Self {
+        match result {
+            Ok(receipt) => Self {
+                success: true,
+                err_msg: "".to_string(),
+                receipt,
+            },
+            Err(err) => Self {
+                success: false,
+                err_msg: err.to_string(),
+                receipt: TransactionReceipt::default(),
+            },
+        }
+    }
+}
+
+#[marine]
+#[derive(Debug)]
+pub struct FdbTransactionReceiptsResult {
+    pub success: bool,
+    pub err_msg: String,
+    pub receipts: Vec<TransactionReceipt>,
+}
+
+impl From<Result<Vec<TransactionReceipt>, ServiceError>> for FdbTransactionReceiptsResult {
+    fn from(result: Result<Vec<TransactionReceipt>, ServiceError>) -> Self {
+        match result {
+            Ok(receipts) => Self {
+                success: true,
+                err_msg: "".to_string(),
+                receipts,
+            },
+            Err(err) => Self {
+                success: false,
+                err_msg: err.to_string(),
+                receipts: Vec::new(),
             },
         }
     }

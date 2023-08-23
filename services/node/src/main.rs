@@ -38,7 +38,7 @@ use meta_contract::MetaContract;
 use metadatas::{FinalMetadata, MetadataOrdering, MetadataQuery, Metadata};
 use result::{
     FdbClock, FdbCronTxResult, FdbCronTxsResult, FdbCronsResult, FdbMetaContractResult,
-    FdbMetadataHistoryResult, FdbMetadatasResult, FdbTransactionResult, FdbTransactionsResult,
+    FdbMetadataHistoryResult, FdbMetadatasResult, FdbTransactionResult, FdbTransactionsResult, FdbTransactionReceiptResult,
 };
 use result::{FdbMetadataResult, FdbResult};
 use serde_json::Value;
@@ -445,6 +445,11 @@ pub fn get_complete_transactions(from: i64, to: i64) -> FdbTransactionsResult {
     }
 
     wrapped_try(|| get_storage().get_complete_transactions(from, ts)).into()
+}
+
+#[marine]
+pub fn get_transaction_receipt(hash: String) -> FdbTransactionReceiptResult {
+  wrapped_try(|| get_storage().get_transaction_receipt(hash)).into()
 }
 
 #[marine]

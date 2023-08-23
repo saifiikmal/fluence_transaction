@@ -146,7 +146,7 @@ func send_cron_tx(hash: string) -> FdbCronTxResult:
 func get_cron_tx_latest_block() -> u64:
   on HOST_PEER_ID:
     Node NODE_SERVICE_ID
-    result <- Node.get_cron_tx_latest_block("0xf44DB7bB5719C79b7483028ea62182DB8E624B10", "80001", "0x957f358702a4cd1c866fb29aefe080a9a56303adf02d47a081a56707d2d30033")
+    result <- Node.get_cron_tx_latest_block("0x0692f233614802D06e86CBDE6b5D090A9F5d3c10", "80001", "0x957f358702a4cd1c866fb29aefe080a9a56303adf02d47a081a56707d2d30033")
   <- result
 
 func get_all_cron_txs() -> FdbCronTxsResult:
