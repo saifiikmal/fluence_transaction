@@ -1,9 +1,9 @@
 {
   "request": {
-    "meta_contract_id": "260c84eb-1f43-4775-ba0e-e600b4acf039",
+    "meta_contract_id": "e6dbf273-7d22-40c9-8b93-ea982edcdf1b",
     "alias": "",
     "public_key": "0xee1f0084514f12e6f02557e43f76669d81ef0022",
-    "signature": "0x4a3c47de29ade233b9accf62ec4f2813721b34bdc66c41e4cddd30636ecf378954fb5cf0712fcee1a343e47a909ecfd03957b2684468286ac1d94205b2e150de1b",
+    "signature": "0xa384c5cab10f385ec73f1d1961f43ac6c49554069bbfc384c99a61efc9e64bb435750fbbde6484b8ea298d595fda43709adfe222d091dd05fb778ae6103085191b",
     "data": "{\"address\":\"0x0692f233614802D06e86CBDE6b5D090A9F5d3c10\",\"chain\":\"80001\",\"topic\":\"0x957f358702a4cd1c866fb29aefe080a9a56303adf02d47a081a56707d2d30033\",\"token_type\":\"erc1155\",\"action\":\"create\",\"hash\":\"\",\"status\":0,\"node_url\":\"https://polygon-mumbai.g.alchemy.com/v2/NThx9TtzI_7El4WRoiYZzbSNzymifW5Q\",\"abi_url\":\"\"}",
     "method": "cron",
     "chain_id": "80001",

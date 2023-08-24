@@ -68,7 +68,7 @@ func getEventCron_30():
       for result <- results.crons par:
         cron_datas <<- result
         from_block = Node.get_cron_tx_latest_block(result.address, result.chain, result.topic)
-        from_block_hex = FevmJsonRpc.decimal_to_hex(0)
+        from_block_hex = FevmJsonRpc.decimal_to_hex(from_block)
         
         if result.token_type == "erc1155":
           if result.abi_url != "":

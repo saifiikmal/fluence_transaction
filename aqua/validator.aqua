@@ -104,7 +104,7 @@ func processCron():
       for result <- results.crons par:
         cron_datas <<- result
         from_block = Node.get_cron_tx_latest_block(result.address, result.chain, result.topic)
-        from_block_hex = FevmJsonRpc.decimal_to_hex(0)
+        from_block_hex = FevmJsonRpc.decimal_to_hex(from_block)
         
         if result.token_type == "erc1155":
           if result.abi_url != "":
@@ -131,7 +131,7 @@ func processCron():
                 if MyOp.array_length(forks) == 2:
                   metaContract <- Node.get_meta_contract_by_id(result.meta_contract_id)
                   dataKey <- Node.generate_data_key(result.chain, result.address, log_data.token_id)
-                  
+
                   MetaContract metaContract.meta.meta_contract_id
                   meta_result <- MetaContract.on_mint(metaContract.meta, dataKey, log_data.token_id, forks[1])
 
@@ -148,6 +148,7 @@ func get_cron_tx_latest_block() -> u64:
     Node NODE_SERVICE_ID
     result <- Node.get_cron_tx_latest_block("0x0692f233614802D06e86CBDE6b5D090A9F5d3c10", "80001", "0x957f358702a4cd1c866fb29aefe080a9a56303adf02d47a081a56707d2d30033")
   <- result
+
 
 func get_all_cron_txs() -> FdbCronTxsResult:
   on HOST_PEER_ID:

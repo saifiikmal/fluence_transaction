@@ -1,2 +1,2 @@
 #! /bin/bash
-aqua run --input ../aqua/validator.aqua --func 'publish(request)' --data-path dummy-contract2.json --addr /dns4/dev.fluence.0x3zero.com/tcp/19991/wss/p2p/12D3KooWHBG9oaVx4i3vi6c1rSBUm7MLBmyGmmbHoZ23pmjDCnvK --timeout 120000
+aqua run --input ../aqua/validator.aqua --func 'publish(request)' --data-path dummy-contract.json --addr /dns4/dev.fluence.0x3zero.com/tcp/19991/wss/p2p/12D3KooWHBG9oaVx4i3vi6c1rSBUm7MLBmyGmmbHoZ23pmjDCnvK --timeout 120000

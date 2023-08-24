@@ -102,6 +102,14 @@ pub fn publish(
     let mut error: Option<ServiceError> = None;
     let storage = get_storage();
 
+    if !tx_request.chain_id.is_empty() && !tx_request.token_address.is_empty() {
+      token_key = Metadata::generate_token_key(tx_request.chain_id.clone(), tx_request.token_address.clone());
+    }
+
+    if !tx_request.chain_id.is_empty() && !tx_request.token_address.is_empty() && !tx_request.token_id.is_empty() {
+      data_key = Metadata::generate_data_key(tx_request.chain_id.clone(), tx_request.token_address.clone(), tx_request.token_id.clone());
+    }
+
     if error.is_none() {
         if tx_request.method != METHOD_CONTRACT
             && tx_request.method != METHOD_METADATA
@@ -124,13 +132,6 @@ pub fn publish(
           }
 
           if error.is_none() {
-            data_key = Metadata::generate_data_key(
-              tx_request.chain_id.clone(), 
-              tx_request.token_address.clone(), 
-              tx_request.token_id.clone(),
-            );
-
-            token_key = Metadata::generate_token_key(tx_request.chain_id.clone(), tx_request.token_address.clone());
 
             let result = storage.get_owner_metadata(
               data_key.clone(),
@@ -156,9 +157,7 @@ pub fn publish(
             if tx_request.data.is_empty() {
               error = Some(ServiceError::NoProgramId());
             } else {
-              if !tx_request.token_address.is_empty() &&
-                !tx_request.chain_id.is_empty() {
-                  token_key = Metadata::generate_token_key(tx_request.chain_id.clone(), tx_request.token_address.clone());
+              if !token_key.is_empty() {
                   let token_mc = storage.get_meta_contract_by_tokenkey(token_key.clone());
 
                   match token_mc {

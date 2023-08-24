@@ -29,7 +29,7 @@
                      (ap result-0 $cron_datas)
                      (call %init_peer_id% ("transaction" "get_cron_tx_latest_block") [result-0.$.address! result-0.$.chain! result-0.$.topic!] get_cron_tx_latest_block)
                     )
-                    (call %init_peer_id% ("fevm_json_rpc" "decimal_to_hex") [0] decimal_to_hex)
+                    (call %init_peer_id% ("fevm_json_rpc" "decimal_to_hex") [get_cron_tx_latest_block] decimal_to_hex)
                    )
                    (xor
                     (match result-0.$.token_type! "erc1155"
