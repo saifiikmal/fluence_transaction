@@ -2,7 +2,7 @@ use eyre::Result;
 use marine_rs_sdk::marine;
 
 use crate::{
-    cron::{Cron, CronResult},
+    cron::{Cron},
     cron_tx::CronTx,
     error::ServiceError,
     meta_contract::MetaContract,

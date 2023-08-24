@@ -107,9 +107,15 @@ func processCron():
         from_block_hex = FevmJsonRpc.decimal_to_hex(0)
         
         if result.token_type == "erc1155":
-          evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC1155_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
+          if result.abi_url != "":
+            evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, result.abi_url, from_block_hex, "latest", result.address, [result.topic])
+          else:
+            evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC1155_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
         if result.token_type == "erc721":
-          evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC721_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
+          if result.abi_url != "":
+            evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, result.abi_url, from_block_hex, "latest", result.address, [result.topic])
+          else:
+            evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC721_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
 
         for log <- evm_logs:
           datas: *EventLogParamResult
@@ -121,27 +127,21 @@ func processCron():
               if log_data.data != "00":
                 forks = FevmJsonRpc.decode_abi(["string", "bytes"], log_data.data)
 
-                -- parsing Minted event log (data_key, data)
+                -- parsing Minted event log (data_key/empty, data)
                 if MyOp.array_length(forks) == 2:
                   metaContract <- Node.get_meta_contract_by_id(result.meta_contract_id)
+                  dataKey <- Node.generate_data_key(result.chain, result.address, log_data.token_id)
+                  
                   MetaContract metaContract.meta.meta_contract_id
-                  meta_result <- MetaContract.on_mint(metaContract.meta, forks[0], log_data.token_id, forks[1])
+                  meta_result <- MetaContract.on_mint(metaContract.meta, dataKey, log_data.token_id, forks[1])
 
                   if meta_result.result:
-                    Node.set_metadata_cron(metaContract.meta, forks[0], meta_result.result, meta_result.metadatas)
-                    Node.send_cron_tx(result.hash, forks[0], llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
+                    Node.set_metadata_cron(metaContract.meta, result, log_data.token_id, meta_result.result, meta_result.metadatas)
+                    Node.send_cron_tx(result.hash, llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
               datas <<- llog
               datas2 <<- llog
           join datas[n-1]
       join cron_datas[cron_length-1]
-
-func send_cron_tx(hash: string) -> FdbCronTxResult:
-  
-  on HOST_PEER_ID:
-    Node NODE_SERVICE_ID
-
-    result <- Node.send_cron_tx(hash, "123", "data", 0, "0x0", "1")
-  <- result
 
 func get_cron_tx_latest_block() -> u64:
   on HOST_PEER_ID:
@@ -184,3 +184,8 @@ func get_crons() -> FdbCronsResult:
     Node NODE_SERVICE_ID
     results <- Node.get_active_crons()
   <- results
+
+func decode_event(data: string) -> []string:
+  on HOST_PEER_ID:
+    result <- FevmJsonRpc.decode_abi(["string", "bytes"], data)
+  <- result

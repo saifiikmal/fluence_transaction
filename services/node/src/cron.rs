@@ -21,10 +21,11 @@ pub struct Cron {
     pub meta_contract_id: String,
     pub node_url: String,
     pub public_key: String,
+    pub abi_url: String,
 }
 
 impl Cron {
-    pub fn new(token_key: String, address: String, topic: String, token_type: String, chain: String, status: i64, meta_contract_id: String, node_url: String, public_key: String) -> Self {
+    pub fn new(token_key: String, address: String, topic: String, token_type: String, chain: String, status: i64, meta_contract_id: String, node_url: String, public_key: String, abi_url: String) -> Self {
       let hash = Self::generate_hash(address.clone(), topic.clone(), chain.clone());
 
       Self {
@@ -38,6 +39,7 @@ impl Cron {
           meta_contract_id,
           node_url,
           public_key,
+          abi_url,
       }
     }
 
@@ -60,21 +62,6 @@ impl Cron {
     }
 }
 
-#[marine]
-#[derive(Debug, Default, Clone, Serialize)]
-pub struct CronResult {
-    pub hash: String,
-    pub token_key: String,
-    pub address: String,
-    pub topic: String,
-    pub token_type: String,
-    pub chain: String,
-    pub status: i64,
-    pub meta_contract_id: String,
-    pub node_url: String,
-    pub public_key: String,
-}
-
 #[derive(Deserialize)]
 pub struct SerdeCron {
     pub action: String,
@@ -86,6 +73,7 @@ pub struct SerdeCron {
     pub status: i64,
     // pub meta_contract_id: String,
     pub node_url: String,
+    pub abi_url: String,
 }
 
 impl Storage {
@@ -103,7 +91,8 @@ impl Storage {
             meta_contract_id varchar(255) null,
             node_url text null,
             last_processed_block integer not null default(0),
-            public_key TEXT not null
+            public_key TEXT not null,
+            abi_url TEXT null
         )",
             CRON_TABLE_NAME
         );
@@ -120,7 +109,7 @@ impl Storage {
      */
     pub fn write_cron(&self, cron: Cron) -> Result<(), ServiceError> {
         let s = format!(
-            "insert into {} (hash, token_key, address, token_type, chain, topic, status, last_processed_block, meta_contract_id, node_url, public_key) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')",
+            "insert into {} (hash, token_key, address, token_type, chain, topic, status, last_processed_block, meta_contract_id, node_url, public_key, abi_url) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')",
             CRON_TABLE_NAME,
             cron.hash,
             cron.token_key,
@@ -133,6 +122,7 @@ impl Storage {
             cron.meta_contract_id,
             cron.node_url,
             cron.public_key,
+            cron.abi_url,
         );
 
         let result = Storage::execute(s);

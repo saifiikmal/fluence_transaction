@@ -17,7 +17,7 @@ mod transaction_receipt;
 pub mod transactions_impl;
 mod validators;
 
-use cron::SerdeCron;
+use cron::{SerdeCron, Cron};
 use cron_tx::CronTx;
 use data_types::{DataTypeClone, DataTypeFork, SerdeDataTypeFork};
 use defaults::{
@@ -349,7 +349,7 @@ pub fn publish_batch(
 #[marine]
 pub fn send_cron_tx(
     hash: String,
-    data_key: String,
+    // data_key: String,
     data: String,
     tx_block_number: u64,
     tx_hash: String,
@@ -366,6 +366,11 @@ pub fn send_cron_tx(
 
     match cron {
         Ok(cron_data) => {
+            let data_key = Metadata::generate_data_key(
+              cron_data.chain.clone(), 
+              cron_data.address.clone(), 
+              token_id.clone(),
+            );
             let logs = storage.get_cron_tx_by_tx_hash(
                 tx_hash.clone(),
                 cron_data.clone().address,
@@ -479,6 +484,11 @@ pub fn get_metadata(data_key: String,
 #[marine]
 pub fn get_metadatas(data_key: String, version: String) -> FdbMetadatasResult {
     wrapped_try(|| get_storage().get_metadata_by_datakey_and_version(data_key, version)).into()
+}
+
+#[marine]
+pub fn get_metadatas_by_tokenkey(token_key: String, token_id: String, version: String) -> FdbMetadatasResult {
+    wrapped_try(|| get_storage().get_metadata_by_tokenkey_and_tokenid(token_key, token_id, version)).into()
 }
 
 #[marine]
@@ -636,11 +646,12 @@ pub fn set_metadata(
 #[marine]
 pub fn set_metadata_cron(
     meta_contract: MetaContract,
-    data_key: String,
+    cron: Cron,
+    token_id: String,
     on_metacontract_result: bool,
     metadatas: Vec<FinalMetadata>,
 ) {
-    validate_metadata_cron(meta_contract, data_key, on_metacontract_result, metadatas);
+    validate_metadata_cron(meta_contract, cron, token_id, on_metacontract_result, metadatas);
 }
 
 #[marine]
@@ -663,6 +674,16 @@ pub fn set_clone(
 #[marine]
 pub fn set_cron(transaction_hash: String) {
     validate_cron(transaction_hash);
+}
+
+#[marine]
+pub fn generate_token_key(chain_id: String, token_address: String) -> String {
+  Metadata::generate_token_key(chain_id, token_address)
+}
+
+#[marine]
+pub fn generate_data_key(chain_id: String, token_address: String, token_id: String) -> String {
+  Metadata::generate_data_key(chain_id, token_address, token_id)
 }
 
 // *********** Deserializer *****************

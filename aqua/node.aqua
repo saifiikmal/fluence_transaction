@@ -11,6 +11,7 @@ data Cron:
   meta_contract_id: string
   node_url: string
   public_key: string
+  abi_url: string
 
 data CronTx:
   hash: string
@@ -74,6 +75,7 @@ data Metadata:
   token_key: string
   data_key: string
   meta_contract_id: string
+  token_id: string
   alias: string
   cid: string
   public_key: string
@@ -173,6 +175,8 @@ data TransactionRequest:
 service Node("transaction"):
   bind_meta_contract(transaction_hash: string)  
   deserialize_fork(data: string) -> DataTypeFork
+  generate_data_key(chain_id: string, token_address: string, token_id: string) -> string
+  generate_token_key(chain_id: string, token_address: string) -> string
   get_active_crons() -> FdbCronsResult
   get_all_cron_txs() -> FdbCronTxsResult
   get_all_crons() -> FdbCronsResult
@@ -184,6 +188,7 @@ service Node("transaction"):
   get_metadata(data_key: string, meta_contract_id: string, public_key: string, alias: string, version: string) -> FdbMetadataResult
   get_metadata_with_history(data_key: string, meta_contract_id: string, public_key: string, alias: string, version: string) -> FdbMetadataHistoryResult
   get_metadatas(data_key: string, version: string) -> FdbMetadatasResult
+  get_metadatas_by_tokenkey(token_key: string, token_id: string, version: string) -> FdbMetadatasResult
   get_node_clock() -> FdbClock
   get_pending_transactions() -> FdbTransactionsResult
   get_transaction(hash: string) -> FdbTransactionResult
@@ -194,8 +199,8 @@ service Node("transaction"):
   publish_batch(txs: []TransactionRequest) -> []FdbResult
   search_cron_tx(address: string, chain: string, topic: string) -> FdbCronTxsResult
   search_metadatas(query: []MetadataQuery, ordering: []MetadataOrdering, from: u32, to: u32) -> FdbMetadatasResult
-  send_cron_tx(hash: string, data_key: string, data: string, tx_block_number: u64, tx_hash: string, token_id: string) -> FdbCronTxResult
+  send_cron_tx(hash: string, data: string, tx_block_number: u64, tx_hash: string, token_id: string) -> FdbCronTxResult
   set_clone(transaction_hash: string, meta_contract_id: string, on_metacontract_result: bool, data: string, final_error_msg: string)  
   set_cron(transaction_hash: string)  
   set_metadata(transaction_hash: string, meta_contract_id: string, on_metacontract_result: bool, metadatas: []FinalMetadata, final_error_msg: string)  
-  set_metadata_cron(meta_contract: MetaContract, data_key: string, on_metacontract_result: bool, metadatas: []FinalMetadata)  
+  set_metadata_cron(meta_contract: MetaContract, cron: Cron, token_id: string, on_metacontract_result: bool, metadatas: []FinalMetadata)  

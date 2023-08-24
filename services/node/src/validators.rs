@@ -182,6 +182,7 @@ pub fn validate_metadata(
                         transaction.data_key.clone(),
                         transaction.token_key.clone(),
                         transaction.meta_contract_id.clone(),
+                        transaction.token_id.clone(),
                         data.alias.clone(),
                         content_cid,
                         data.public_key.clone(),
@@ -222,13 +223,19 @@ pub fn validate_metadata(
  */
 pub fn validate_metadata_cron(
   meta_contract: MetaContract,
-  data_key: String,
+  cron: Cron,
+  token_id: String,
   on_metacontract_result: bool,
   metadatas: Vec<FinalMetadata>,
 ) {
   let storage = get_storage();
 
   if on_metacontract_result {
+      let data_key = Metadata::generate_data_key(
+        cron.chain, 
+        cron.address, 
+        token_id.clone(),
+      );
       for data in metadatas {
           let result = storage.get_owner_metadata(
               data_key.clone(),
@@ -250,8 +257,9 @@ pub fn validate_metadata_cron(
 
                   let metadata = Metadata::new(
                       data_key.clone(),
-                      meta_contract.token_key.clone(),
+                      cron.token_key.clone(),
                       meta_contract.meta_contract_id.clone(),
+                      token_id.clone(),
                       data.alias.clone(),
                       content_cid,
                       data.public_key.clone(),
@@ -328,6 +336,7 @@ pub fn validate_clone(
             transaction.data_key.clone(),
             origin_metadata.token_key.clone(),
             origin_metadata.meta_contract_id.clone(),
+            origin_metadata.token_id.clone(),
             origin_metadata.alias.clone(),
             result_ipfs_dag_put.cid,
             origin_metadata.public_key.clone(),
@@ -381,6 +390,7 @@ pub fn validate_cron(transaction_hash: String) {
         transaction.meta_contract_id.clone(),
         serde_cron.node_url,
         transaction.public_key.clone(),
+        serde_cron.abi_url,
     );
 
     match result {
