@@ -361,7 +361,7 @@ pub fn send_cron_tx(
     let mut cron_tx = CronTx::default();
     let storage = get_storage();
 
-    let cron = storage.get_cron_by_hash(hash);
+    let cron = storage.get_cron_by_hash(hash.clone());
 
     match cron {
         Ok(cron_data) => {
@@ -402,7 +402,7 @@ pub fn send_cron_tx(
                     cron_data.chain,
                     cron_data.meta_contract_id,
                     timestamp.as_millis() as u64,
-                    tx_block_number,
+                    tx_block_number.clone(),
                     tx_hash,
                     CRON_TX_STATUS_SUCCESS,
                     data,
@@ -413,6 +413,7 @@ pub fn send_cron_tx(
                 );
 
                 let _ = storage.write_cron_tx(cron_tx.clone());
+                let _ = storage.update_cron_block_no(hash.clone(),  tx_block_number.clone());
             }
         }
         Err(ServiceError::RecordNotFound(_)) => {}
@@ -491,6 +492,11 @@ pub fn get_metadatas_by_tokenkey(token_key: String, token_id: String, version: S
 }
 
 #[marine]
+pub fn get_metadatas_all_version(data_key: String) -> FdbMetadatasResult {
+    wrapped_try(|| get_storage().get_metadatas_all_version(data_key)).into()
+}
+
+#[marine]
 pub fn search_metadatas(
     query: Vec<MetadataQuery>,
     ordering: Vec<MetadataOrdering>,
@@ -563,6 +569,21 @@ pub fn get_cron_tx_latest_block(address: String, chain: String, topic: String) -
 
         match result {
             Ok(log) => log.tx_block_number,
+            Err(ServiceError::RecordNotFound(_)) => 0,
+            Err(_) => 0,
+        }
+    })
+    .into()
+}
+
+#[marine]
+pub fn get_cron_latest_block(hash: String) -> u64 {
+    wrapped_try(|| {
+        let storage = get_storage();
+        let result = storage.get_cron_by_hash(hash);
+
+        match result {
+            Ok(log) => log.last_processed_block,
             Err(ServiceError::RecordNotFound(_)) => 0,
             Err(_) => 0,
         }
@@ -649,8 +670,8 @@ pub fn set_metadata_cron(
     token_id: String,
     on_metacontract_result: bool,
     metadatas: Vec<FinalMetadata>,
-) {
-    validate_metadata_cron(meta_contract, cron, token_id, on_metacontract_result, metadatas);
+) -> FdbMetadatasResult {
+    validate_metadata_cron(meta_contract, cron, token_id, on_metacontract_result, metadatas)
 }
 
 #[marine]

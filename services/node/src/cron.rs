@@ -22,10 +22,11 @@ pub struct Cron {
     pub node_url: String,
     pub public_key: String,
     pub abi_url: String,
+    pub last_processed_block: u64,
 }
 
 impl Cron {
-    pub fn new(token_key: String, address: String, topic: String, token_type: String, chain: String, status: i64, meta_contract_id: String, node_url: String, public_key: String, abi_url: String) -> Self {
+    pub fn new(token_key: String, address: String, topic: String, token_type: String, chain: String, status: i64, meta_contract_id: String, node_url: String, public_key: String, abi_url: String, last_processed_block: u64) -> Self {
       let hash = Self::generate_hash(address.clone(), topic.clone(), chain.clone());
 
       Self {
@@ -40,6 +41,7 @@ impl Cron {
           node_url,
           public_key,
           abi_url,
+          last_processed_block,
       }
     }
 
@@ -118,7 +120,7 @@ impl Storage {
             cron.chain,
             cron.topic,
             cron.status,
-            0,
+            cron.last_processed_block,
             cron.meta_contract_id,
             cron.node_url,
             cron.public_key,
@@ -208,6 +210,27 @@ impl Storage {
                   Err(InternalError(e.to_string()))
               }
           }
+    }
+
+    pub fn update_cron_block_no(&self, hash: String, last_block_no: u64) -> Result<(), ServiceError> {
+      let statement = format!(
+        "
+          update {}
+          set last_processed_block = {}
+          where hash = '{}';
+          ",
+            CRON_TABLE_NAME, last_block_no, hash
+        );
+
+        let result = Storage::execute(statement);
+
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                log::info!("{}", e.to_string());
+                Err(InternalError(e.to_string()))
+            }
+        }
     }
 
     pub fn get_cron_by_hash(&self, hash: String) -> Result<Cron, ServiceError> {

@@ -5,6 +5,7 @@ use crate::cron::{Cron, SerdeCron};
 use crate::data_types::DataTypeClone;
 use crate::defaults::{CRON_ACTION_CREATE, CRON_ACTION_UPDATE, CRON_ACTION_UPDATE_STATUS, CRON_STATUS_ENABLE, RECEIPT_STATUS_FAILED, RECEIPT_STATUS_SUCCESS, STATUS_DONE, STATUS_FAILED};
 use crate::metadatas::{FinalMetadata, Metadata, SerdeMetadata};
+use crate::result::{FdbMetadatasResult};
 use crate::transaction::{TransactionSubset, TransactionReceipt};
 use crate::{error::ServiceError, error::ServiceError::*};
 use crate::{get, put_block};
@@ -227,7 +228,9 @@ pub fn validate_metadata_cron(
   token_id: String,
   on_metacontract_result: bool,
   metadatas: Vec<FinalMetadata>,
-) {
+) -> FdbMetadatasResult {
+  let mut final_metadatas: Vec<Metadata> = Vec::new();
+  let mut err_msg = "".to_string();
   let storage = get_storage();
 
   if on_metacontract_result {
@@ -248,7 +251,9 @@ pub fn validate_metadata_cron(
           log::info!("{:?}", result);
 
           match result {
-              Ok(_) => {}
+              Ok(data) => {
+                final_metadatas.push(data);
+              }
               Err(ServiceError::RecordNotFound(_)) => {
 
                   let result_ipfs_dag_put =
@@ -267,11 +272,19 @@ pub fn validate_metadata_cron(
                       data.loose.clone(),
                   );
 
-                  let _ = storage.write_metadata(metadata);
+                  let _ = storage.write_metadata(metadata.clone());
+                  final_metadatas.push(metadata);
               }
-              Err(_) => {}
+              Err(e) => {
+                err_msg = e.to_string();
+              }
           };
       }
+  }
+  FdbMetadatasResult { 
+    success: on_metacontract_result, 
+    err_msg, 
+    metadatas: final_metadatas, 
   }
 }
 
@@ -391,6 +404,7 @@ pub fn validate_cron(transaction_hash: String) {
         serde_cron.node_url,
         transaction.public_key.clone(),
         serde_cron.abi_url,
+        0,
     );
 
     match result {

@@ -148,6 +148,23 @@ impl Storage {
         }
     }
 
+    pub fn get_metadatas_all_version(
+        &self,
+        data_key: String,
+    ) -> Result<Vec<Metadata>, ServiceError> {
+        let statement = format!(
+            "SELECT * FROM {} WHERE data_key = '{}' order by alias asc, version asc",
+            METADATAS_TABLE_NAME,
+            data_key.clone(),
+        );
+
+        let result = Storage::read(statement)?;
+        match read(result) {
+            Ok(metas) => Ok(metas),
+            Err(e) => Err(e),
+        }
+    }
+
 
     pub fn get_owner_metadata_by_datakey_and_alias(
         &self,
