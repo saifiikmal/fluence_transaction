@@ -9,6 +9,7 @@ data FinalMetadata:
   loose: i64
 
 data MetaContract:
+  hash: string
   token_key: string
   meta_contract_id: string
   public_key: string

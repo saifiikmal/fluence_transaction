@@ -165,6 +165,26 @@ impl Storage {
         }
     }
 
+    pub fn get_metadatas_by_block(
+      &self,
+      data_key: String,
+      meta_contract_id: String,
+  ) -> Result<Vec<Metadata>, ServiceError> {
+      let statement = format!(
+          "SELECT * FROM {} WHERE data_key = '{}' and meta_contract_id = '{}' order by alias asc, version asc",
+          METADATAS_TABLE_NAME,
+          data_key.clone(),
+          meta_contract_id.clone(),
+      );
+
+      let result = Storage::read(statement)?;
+      match read(result) {
+          Ok(metas) => Ok(metas),
+          Err(e) => Err(e),
+      }
+  }
+
+
 
     pub fn get_owner_metadata_by_datakey_and_alias(
         &self,

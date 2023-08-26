@@ -43,12 +43,12 @@ pub fn validate_meta_contract(transaction_hash: String) {
     if error.is_none() {
         let meta_result;
 
-        current_meta_contract = MetaContract {
-            token_key: transaction.token_key.clone(),
-            meta_contract_id: transaction.meta_contract_id.clone(),
-            public_key: transaction.public_key.clone(),
-            cid: "".to_string(),
-        };
+        current_meta_contract = MetaContract::new(
+            transaction.token_key.clone(),
+            transaction.meta_contract_id.clone(),
+            transaction.public_key.clone(),
+            "".to_string(),
+        );
 
         if is_update {
           meta_result = storage.rebind_meta_contract(

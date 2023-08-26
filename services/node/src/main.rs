@@ -497,6 +497,11 @@ pub fn get_metadatas_all_version(data_key: String) -> FdbMetadatasResult {
 }
 
 #[marine]
+pub fn get_metadatas_by_block(data_key: String, meta_contract_id: String) -> FdbMetadatasResult {
+    wrapped_try(|| get_storage().get_metadatas_by_block(data_key, meta_contract_id)).into()
+}
+
+#[marine]
 pub fn search_metadatas(
     query: Vec<MetadataQuery>,
     ordering: Vec<MetadataOrdering>,

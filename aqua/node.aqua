@@ -55,6 +55,7 @@ data FdbCronsResult:
   crons: []Cron
 
 data MetaContract:
+  hash: string
   token_key: string
   meta_contract_id: string
   public_key: string
@@ -191,6 +192,7 @@ service Node("transaction"):
   get_metadata_with_history(data_key: string, meta_contract_id: string, public_key: string, alias: string, version: string) -> FdbMetadataHistoryResult
   get_metadatas(data_key: string, version: string) -> FdbMetadatasResult
   get_metadatas_all_version(data_key: string) -> FdbMetadatasResult
+  get_metadatas_by_block(data_key: string, meta_contract_id: string) -> FdbMetadatasResult
   get_metadatas_by_tokenkey(token_key: string, token_id: string, version: string) -> FdbMetadatasResult
   get_node_clock() -> FdbClock
   get_pending_transactions() -> FdbTransactionsResult

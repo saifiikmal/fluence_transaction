@@ -125,17 +125,44 @@
                                   (match array_length 2
                                    (seq
                                     (seq
-                                     (seq
-                                      (call %init_peer_id% ("transaction" "get_meta_contract_by_id") [result-0.$.meta_contract_id!] get_meta_contract_by_id)
-                                      (call %init_peer_id% ("transaction" "generate_data_key") [result-0.$.chain! result-0.$.address! deserialize_fork.$.token_id!] generate_data_key)
-                                     )
-                                     (call %init_peer_id% (get_meta_contract_by_id.$.meta.meta_contract_id! "on_mint") [get_meta_contract_by_id.$.meta! generate_data_key deserialize_fork.$.token_id! decode_abi.$.[1]!] on_mint)
+                                     (call %init_peer_id% ("transaction" "get_meta_contract_by_id") [result-0.$.meta_contract_id!] get_meta_contract_by_id)
+                                     (call %init_peer_id% ("transaction" "generate_data_key") [result-0.$.chain! result-0.$.address! deserialize_fork.$.token_id!] generate_data_key)
                                     )
                                     (xor
-                                     (match on_mint.$.result! true
+                                     (match get_meta_contract_by_id.$.success! true
                                       (seq
-                                       (call %init_peer_id% ("transaction" "set_metadata_cron") [get_meta_contract_by_id.$.meta! result-0 deserialize_fork.$.token_id! on_mint.$.result! on_mint.$.metadatas!] set_metadata_cron)
-                                       (call %init_peer_id% ("transaction" "send_cron_tx") [result-0.$.hash! llog-0.$.data! llog-0.$.block_number! llog-0.$.transaction_hash! deserialize_fork.$.token_id!] send_cron_tx)
+                                       (call %init_peer_id% (get_meta_contract_by_id.$.meta.meta_contract_id! "on_mint") [get_meta_contract_by_id.$.meta! generate_data_key deserialize_fork.$.token_id! decode_abi.$.[1]!] on_mint)
+                                       (xor
+                                        (match on_mint.$.result! true
+                                         (seq
+                                          (seq
+                                           (seq
+                                            (call %init_peer_id% ("transaction" "set_metadata_cron") [get_meta_contract_by_id.$.meta! result-0 deserialize_fork.$.token_id! on_mint.$.result! on_mint.$.metadatas!] set_metadata_cron)
+                                            (call %init_peer_id% ("transaction" "send_cron_tx") [result-0.$.hash! llog-0.$.data! llog-0.$.block_number! llog-0.$.transaction_hash! deserialize_fork.$.token_id!] send_cron_tx)
+                                           )
+                                           (call %init_peer_id% ("transaction" "get_meta_contract") [result-0.$.token_key!] get_meta_contract)
+                                          )
+                                          (xor
+                                           (match get_meta_contract.$.success! true
+                                            (seq
+                                             (call %init_peer_id% (get_meta_contract.$.meta.meta_contract_id! "on_mint") [get_meta_contract.$.meta! generate_data_key deserialize_fork.$.token_id! decode_abi.$.[1]!] on_mint-0)
+                                             (xor
+                                              (match on_mint-0.$.result! true
+                                               (seq
+                                                (call %init_peer_id% ("transaction" "set_metadata_cron") [get_meta_contract.$.meta! result-0 deserialize_fork.$.token_id! on_mint-0.$.result! on_mint-0.$.metadatas!] set_metadata_cron-0)
+                                                (call %init_peer_id% ("transaction" "send_cron_tx") [result-0.$.hash! llog-0.$.data! llog-0.$.block_number! llog-0.$.transaction_hash! deserialize_fork.$.token_id!] send_cron_tx-0)
+                                               )
+                                              )
+                                              (call %init_peer_id% ("op" "noop") [])
+                                             )
+                                            )
+                                           )
+                                           (call %init_peer_id% ("op" "noop") [])
+                                          )
+                                         )
+                                        )
+                                        (call %init_peer_id% ("op" "noop") [])
+                                       )
                                       )
                                      )
                                      (call %init_peer_id% ("op" "noop") [])
