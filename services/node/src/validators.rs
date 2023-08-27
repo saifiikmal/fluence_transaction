@@ -245,7 +245,7 @@ pub fn validate_metadata_cron(
               meta_contract.meta_contract_id.clone(),
               data.public_key.clone(),
               data.alias.clone(),
-              "".to_string(),
+              data.version.clone(),
           );
 
           log::info!("{:?}", result);
@@ -268,7 +268,7 @@ pub fn validate_metadata_cron(
                       data.alias.clone(),
                       content_cid,
                       data.public_key.clone(),
-                      "".to_string(),
+                      data.version.clone(),
                       data.loose.clone(),
                   );
 

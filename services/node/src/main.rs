@@ -129,6 +129,14 @@ pub fn publish(
         if tx_request.method.clone() == METHOD_METADATA {
           if meta_contract_id.clone().is_empty() {
               error = Some(ServiceError::NoProgramId());
+          } else {
+            let meta_contract = storage.get_meta_contract_by_id(meta_contract_id.clone());
+
+            match meta_contract {
+              Ok(_) => {},
+              Err(ServiceError::RecordNotFound(_)) => error = Some(ServiceError::RecordNotFound(meta_contract_id.clone())),
+              Err(e) => error = Some(e),
+            }
           }
 
           if error.is_none() {
@@ -497,8 +505,8 @@ pub fn get_metadatas_all_version(data_key: String) -> FdbMetadatasResult {
 }
 
 #[marine]
-pub fn get_metadatas_by_block(data_key: String, meta_contract_id: String) -> FdbMetadatasResult {
-    wrapped_try(|| get_storage().get_metadatas_by_block(data_key, meta_contract_id)).into()
+pub fn get_metadatas_by_block(data_key: String, meta_contract_id: String, version: String) -> FdbMetadatasResult {
+    wrapped_try(|| get_storage().get_metadatas_by_block(data_key, meta_contract_id, version)).into()
 }
 
 #[marine]

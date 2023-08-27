@@ -169,13 +169,20 @@ impl Storage {
       &self,
       data_key: String,
       meta_contract_id: String,
+      version: String,
   ) -> Result<Vec<Metadata>, ServiceError> {
-      let statement = format!(
-          "SELECT * FROM {} WHERE data_key = '{}' and meta_contract_id = '{}' order by alias asc, version asc",
+      let mut statement = format!(
+          "SELECT * FROM {} WHERE data_key = '{}' and meta_contract_id = '{}'",
           METADATAS_TABLE_NAME,
           data_key.clone(),
           meta_contract_id.clone(),
       );
+      
+      if !version.is_empty() {
+        statement = format!("{} and version= '{}'", statement, version.clone());
+      }
+
+      statement = format!("{} order by alias asc, version asc", statement);
 
       let result = Storage::read(statement)?;
       match read(result) {

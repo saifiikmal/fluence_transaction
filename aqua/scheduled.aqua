@@ -28,18 +28,20 @@ func validateTransaction(hash: string):
     if tx.transaction.method == "metadata":
       metaContract <- Node.get_meta_contract_by_id(tx.transaction.meta_contract_id)
       if metaContract.success:
-        metadatasResult <- Node.get_metadatas(tx.transaction.data_key, "")
+        metadatasResult <- Node.get_metadatas(tx.transaction.data_key, tx.transaction.version)
         MetaContract metaContract.meta.meta_contract_id
         metaContractResult <- MetaContract.on_execute(metaContract.meta, metadatasResult.metadatas, tx.transaction)
         Node.set_metadata(hash, metaContract.meta.meta_contract_id, metaContractResult.result, metaContractResult.metadatas, metaContractResult.error_string)
 
-        if tx.transaction.token_key != "":
-          metaContractToken <- Node.get_meta_contract(tx.transaction.token_key)
-          if metaContractToken.success:
-            metadatasTokenResult <- Node.get_metadatas(tx.transaction.data_key, "")
-            MetaContract metaContractToken.meta.meta_contract_id
-            metaContractTokenResult <- MetaContract.on_execute(metaContractToken.meta, metadatasTokenResult.metadatas, tx.transaction)
-            Node.set_metadata(hash, metaContractToken.meta.meta_contract_id, metaContractTokenResult.result, metaContractTokenResult.metadatas, metaContractTokenResult.error_string)
+        -- if not main contract
+        if metaContract.meta.token_key == "":
+          if tx.transaction.token_key != "":
+            metaContractToken <- Node.get_meta_contract(tx.transaction.token_key)
+            if metaContractToken.success:
+              metadatasTokenResult <- Node.get_metadatas_all_version(tx.transaction.data_key)
+              MetaContract metaContractToken.meta.meta_contract_id
+              metaContractTokenResult <- MetaContract.on_execute(metaContractToken.meta, metadatasTokenResult.metadatas, tx.transaction)
+              Node.set_metadata(hash, metaContractToken.meta.meta_contract_id, metaContractTokenResult.result, metaContractTokenResult.metadatas, metaContractTokenResult.error_string)
 
     if tx.transaction.method == "cron":
       Node.set_cron(hash)
@@ -84,6 +86,7 @@ func getEventCron_30():
 
           n <- MyOp2.array_length(log)
           for llog <- log par:
+            -- address, token_id, data
             log_data = Node.deserialize_fork(llog.data)
             if log_data.data != "":
               if log_data.data != "00":
