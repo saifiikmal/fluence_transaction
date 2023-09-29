@@ -261,6 +261,7 @@ pub fn read(result: RQLiteResult) -> Result<Vec<CronTx>, ServiceError> {
 
   if result.rows.is_some() {
     for row in result.rows.unwrap() {
+      // println!("row: {:?}", row);
         match row {
             Row::CronTx(metadata) => txs.push(metadata),
             _ => {

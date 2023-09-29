@@ -35,9 +35,9 @@ pub enum Row {
     Metadata(Metadata),
     MetaContract(MetaContract),
     Transaction(Transaction),
-    TransactionReceipt(TransactionReceipt),
-    Cron(Cron),
     CronTx(CronTx),
+    Cron(Cron),
+    TransactionReceipt(TransactionReceipt),
 }
 
 #[inline]

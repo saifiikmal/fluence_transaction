@@ -14,6 +14,7 @@ impl Storage {
                 token_key TEXT not null,
                 data_key TEXT not null,
                 meta_contract_id TEXT not null,
+                token_id TEXT null,
                 alias varchar(255),
                 cid TEXT null,
                 public_key TEXT not null,
@@ -36,12 +37,13 @@ impl Storage {
      */
     pub fn write_metadata(&self, metadata: Metadata) -> Result<(), ServiceError> {
         let s = format!(
-            "insert into {} (hash, token_key, data_key, meta_contract_id, alias, cid, public_key, version, loose) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')",
+            "insert into {} (hash, token_key, data_key, meta_contract_id, token_id, alias, cid, public_key, version, loose) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')",
             METADATAS_TABLE_NAME,
             metadata.hash,
             metadata.token_key,
             metadata.data_key,
             metadata.meta_contract_id,
+            metadata.token_id,
             metadata.alias,
             metadata.cid,
             metadata.public_key,
@@ -124,6 +126,71 @@ impl Storage {
             Err(e) => Err(e),
         }
     }
+
+    pub fn get_metadata_by_tokenkey_and_tokenid(
+        &self,
+        token_key: String,
+        token_id: String,
+        version: String,
+    ) -> Result<Vec<Metadata>, ServiceError> {
+        let statement = format!(
+            "SELECT * FROM {} WHERE token_key = '{}' AND token_id = '{}' AND version = '{}'",
+            METADATAS_TABLE_NAME,
+            token_key.clone(),
+            token_id.clone(),
+            version.clone(),
+        );
+
+        let result = Storage::read(statement)?;
+        match read(result) {
+            Ok(metas) => Ok(metas),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn get_metadatas_all_version(
+        &self,
+        data_key: String,
+    ) -> Result<Vec<Metadata>, ServiceError> {
+        let statement = format!(
+            "SELECT * FROM {} WHERE data_key = '{}' order by alias asc, version asc",
+            METADATAS_TABLE_NAME,
+            data_key.clone(),
+        );
+
+        let result = Storage::read(statement)?;
+        match read(result) {
+            Ok(metas) => Ok(metas),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn get_metadatas_by_block(
+      &self,
+      data_key: String,
+      meta_contract_id: String,
+      version: String,
+  ) -> Result<Vec<Metadata>, ServiceError> {
+      let mut statement = format!(
+          "SELECT * FROM {} WHERE data_key = '{}' and meta_contract_id = '{}'",
+          METADATAS_TABLE_NAME,
+          data_key.clone(),
+          meta_contract_id.clone(),
+      );
+      
+      if !version.is_empty() {
+        statement = format!("{} and version= '{}'", statement, version.clone());
+      }
+
+      statement = format!("{} order by alias asc, version asc", statement);
+
+      let result = Storage::read(statement)?;
+      match read(result) {
+          Ok(metas) => Ok(metas),
+          Err(e) => Err(e),
+      }
+  }
+
 
 
     pub fn get_owner_metadata_by_datakey_and_alias(

@@ -17,7 +17,7 @@ mod transaction_receipt;
 pub mod transactions_impl;
 mod validators;
 
-use cron::SerdeCron;
+use cron::{SerdeCron, Cron};
 use cron_tx::CronTx;
 use data_types::{DataTypeClone, DataTypeFork, SerdeDataTypeFork};
 use defaults::{
@@ -38,7 +38,7 @@ use meta_contract::MetaContract;
 use metadatas::{FinalMetadata, MetadataOrdering, MetadataQuery, Metadata};
 use result::{
     FdbClock, FdbCronTxResult, FdbCronTxsResult, FdbCronsResult, FdbMetaContractResult,
-    FdbMetadataHistoryResult, FdbMetadatasResult, FdbTransactionResult, FdbTransactionsResult,
+    FdbMetadataHistoryResult, FdbMetadatasResult, FdbTransactionResult, FdbTransactionsResult, FdbTransactionReceiptResult,
 };
 use result::{FdbMetadataResult, FdbResult};
 use serde_json::Value;
@@ -102,6 +102,14 @@ pub fn publish(
     let mut error: Option<ServiceError> = None;
     let storage = get_storage();
 
+    if !tx_request.chain_id.is_empty() && !tx_request.token_address.is_empty() {
+      token_key = Metadata::generate_token_key(tx_request.chain_id.clone(), tx_request.token_address.clone());
+    }
+
+    if !tx_request.chain_id.is_empty() && !tx_request.token_address.is_empty() && !tx_request.token_id.is_empty() {
+      data_key = Metadata::generate_data_key(tx_request.chain_id.clone(), tx_request.token_address.clone(), tx_request.token_id.clone());
+    }
+
     if error.is_none() {
         if tx_request.method != METHOD_CONTRACT
             && tx_request.method != METHOD_METADATA
@@ -121,16 +129,17 @@ pub fn publish(
         if tx_request.method.clone() == METHOD_METADATA {
           if meta_contract_id.clone().is_empty() {
               error = Some(ServiceError::NoProgramId());
+          } else {
+            let meta_contract = storage.get_meta_contract_by_id(meta_contract_id.clone());
+
+            match meta_contract {
+              Ok(_) => {},
+              Err(ServiceError::RecordNotFound(_)) => error = Some(ServiceError::RecordNotFound(meta_contract_id.clone())),
+              Err(e) => error = Some(e),
+            }
           }
 
           if error.is_none() {
-            data_key = Metadata::generate_data_key(
-              tx_request.chain_id.clone(), 
-              tx_request.token_address.clone(), 
-              tx_request.token_id.clone(),
-            );
-
-            token_key = Metadata::generate_token_key(tx_request.chain_id.clone(), tx_request.token_address.clone());
 
             let result = storage.get_owner_metadata(
               data_key.clone(),
@@ -156,9 +165,7 @@ pub fn publish(
             if tx_request.data.is_empty() {
               error = Some(ServiceError::NoProgramId());
             } else {
-              if !tx_request.token_address.is_empty() &&
-                !tx_request.chain_id.is_empty() {
-                  token_key = Metadata::generate_token_key(tx_request.chain_id.clone(), tx_request.token_address.clone());
+              if !token_key.is_empty() {
                   let token_mc = storage.get_meta_contract_by_tokenkey(token_key.clone());
 
                   match token_mc {
@@ -349,7 +356,7 @@ pub fn publish_batch(
 #[marine]
 pub fn send_cron_tx(
     hash: String,
-    data_key: String,
+    // data_key: String,
     data: String,
     tx_block_number: u64,
     tx_hash: String,
@@ -362,10 +369,15 @@ pub fn send_cron_tx(
     let mut cron_tx = CronTx::default();
     let storage = get_storage();
 
-    let cron = storage.get_cron_by_hash(hash);
+    let cron = storage.get_cron_by_hash(hash.clone());
 
     match cron {
         Ok(cron_data) => {
+            let data_key = Metadata::generate_data_key(
+              cron_data.chain.clone(), 
+              cron_data.address.clone(), 
+              token_id.clone(),
+            );
             let logs = storage.get_cron_tx_by_tx_hash(
                 tx_hash.clone(),
                 cron_data.clone().address,
@@ -398,7 +410,7 @@ pub fn send_cron_tx(
                     cron_data.chain,
                     cron_data.meta_contract_id,
                     timestamp.as_millis() as u64,
-                    tx_block_number,
+                    tx_block_number.clone(),
                     tx_hash,
                     CRON_TX_STATUS_SUCCESS,
                     data,
@@ -409,6 +421,7 @@ pub fn send_cron_tx(
                 );
 
                 let _ = storage.write_cron_tx(cron_tx.clone());
+                let _ = storage.update_cron_block_no(hash.clone(),  tx_block_number.clone());
             }
         }
         Err(ServiceError::RecordNotFound(_)) => {}
@@ -448,6 +461,11 @@ pub fn get_complete_transactions(from: i64, to: i64) -> FdbTransactionsResult {
 }
 
 #[marine]
+pub fn get_transaction_receipt(hash: String) -> FdbTransactionReceiptResult {
+  wrapped_try(|| get_storage().get_transaction_receipt(hash)).into()
+}
+
+#[marine]
 pub fn get_node_clock() -> FdbClock {
     let now = SystemTime::now();
     let timestamp = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
@@ -474,6 +492,21 @@ pub fn get_metadata(data_key: String,
 #[marine]
 pub fn get_metadatas(data_key: String, version: String) -> FdbMetadatasResult {
     wrapped_try(|| get_storage().get_metadata_by_datakey_and_version(data_key, version)).into()
+}
+
+#[marine]
+pub fn get_metadatas_by_tokenkey(token_key: String, token_id: String, version: String) -> FdbMetadatasResult {
+    wrapped_try(|| get_storage().get_metadata_by_tokenkey_and_tokenid(token_key, token_id, version)).into()
+}
+
+#[marine]
+pub fn get_metadatas_all_version(data_key: String) -> FdbMetadatasResult {
+    wrapped_try(|| get_storage().get_metadatas_all_version(data_key)).into()
+}
+
+#[marine]
+pub fn get_metadatas_by_block(data_key: String, meta_contract_id: String, version: String) -> FdbMetadatasResult {
+    wrapped_try(|| get_storage().get_metadatas_by_block(data_key, meta_contract_id, version)).into()
 }
 
 #[marine]
@@ -557,6 +590,21 @@ pub fn get_cron_tx_latest_block(address: String, chain: String, topic: String) -
 }
 
 #[marine]
+pub fn get_cron_latest_block(hash: String) -> u64 {
+    wrapped_try(|| {
+        let storage = get_storage();
+        let result = storage.get_cron_by_hash(hash);
+
+        match result {
+            Ok(log) => log.last_processed_block,
+            Err(ServiceError::RecordNotFound(_)) => 0,
+            Err(_) => 0,
+        }
+    })
+    .into()
+}
+
+#[marine]
 pub fn get_metadata_with_history(
   data_key: String,
   meta_contract_id: String,
@@ -631,11 +679,12 @@ pub fn set_metadata(
 #[marine]
 pub fn set_metadata_cron(
     meta_contract: MetaContract,
-    data_key: String,
+    cron: Cron,
+    token_id: String,
     on_metacontract_result: bool,
     metadatas: Vec<FinalMetadata>,
-) {
-    validate_metadata_cron(meta_contract, data_key, on_metacontract_result, metadatas);
+) -> FdbMetadatasResult {
+    validate_metadata_cron(meta_contract, cron, token_id, on_metacontract_result, metadatas)
 }
 
 #[marine]
@@ -658,6 +707,16 @@ pub fn set_clone(
 #[marine]
 pub fn set_cron(transaction_hash: String) {
     validate_cron(transaction_hash);
+}
+
+#[marine]
+pub fn generate_token_key(chain_id: String, token_address: String) -> String {
+  Metadata::generate_token_key(chain_id, token_address)
+}
+
+#[marine]
+pub fn generate_data_key(chain_id: String, token_address: String, token_id: String) -> String {
+  Metadata::generate_data_key(chain_id, token_address, token_id)
 }
 
 // *********** Deserializer *****************

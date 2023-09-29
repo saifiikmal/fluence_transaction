@@ -11,6 +11,8 @@ data Cron:
   meta_contract_id: string
   node_url: string
   public_key: string
+  abi_url: string
+  last_processed_block: u64
 
 data CronTx:
   hash: string
@@ -53,6 +55,7 @@ data FdbCronsResult:
   crons: []Cron
 
 data MetaContract:
+  hash: string
   token_key: string
   meta_contract_id: string
   public_key: string
@@ -74,6 +77,7 @@ data Metadata:
   token_key: string
   data_key: string
   meta_contract_id: string
+  token_id: string
   alias: string
   cid: string
   public_key: string
@@ -92,6 +96,19 @@ data FdbMetadatasResult:
 
 data FdbResult:
   transaction_hash: string
+
+data TransactionReceipt:
+  hash: string
+  meta_contract_id: string
+  status: i64
+  timestamp: u64
+  error_text: string
+  data: string
+
+data FdbTransactionReceiptResult:
+  success: bool
+  err_msg: string
+  receipt: TransactionReceipt
 
 data Transaction:
   hash: string
@@ -125,6 +142,7 @@ data FinalMetadata:
   alias: string
   content: string
   loose: i64
+  version: string
 
 data MetadataOrdering:
   column: string
@@ -160,10 +178,13 @@ data TransactionRequest:
 service Node("transaction"):
   bind_meta_contract(transaction_hash: string)  
   deserialize_fork(data: string) -> DataTypeFork
+  generate_data_key(chain_id: string, token_address: string, token_id: string) -> string
+  generate_token_key(chain_id: string, token_address: string) -> string
   get_active_crons() -> FdbCronsResult
   get_all_cron_txs() -> FdbCronTxsResult
   get_all_crons() -> FdbCronsResult
   get_complete_transactions(from: i64, to: i64) -> FdbTransactionsResult
+  get_cron_latest_block(hash: string) -> u64
   get_cron_tx_by_tx_hash(tx_hash: string, address: string, chain: string, topic: string) -> FdbCronTxResult
   get_cron_tx_latest_block(address: string, chain: string, topic: string) -> u64
   get_meta_contract(token_key: string) -> FdbMetaContractResult
@@ -171,17 +192,21 @@ service Node("transaction"):
   get_metadata(data_key: string, meta_contract_id: string, public_key: string, alias: string, version: string) -> FdbMetadataResult
   get_metadata_with_history(data_key: string, meta_contract_id: string, public_key: string, alias: string, version: string) -> FdbMetadataHistoryResult
   get_metadatas(data_key: string, version: string) -> FdbMetadatasResult
+  get_metadatas_all_version(data_key: string) -> FdbMetadatasResult
+  get_metadatas_by_block(data_key: string, meta_contract_id: string, version: string) -> FdbMetadatasResult
+  get_metadatas_by_tokenkey(token_key: string, token_id: string, version: string) -> FdbMetadatasResult
   get_node_clock() -> FdbClock
   get_pending_transactions() -> FdbTransactionsResult
   get_transaction(hash: string) -> FdbTransactionResult
+  get_transaction_receipt(hash: string) -> FdbTransactionReceiptResult
   get_transactions(query: []TransactionQuery, ordering: []TransactionOrdering, from: u32, to: u32) -> FdbTransactionsResult
   init()  
   publish(tx_request: TransactionRequest) -> FdbResult
   publish_batch(txs: []TransactionRequest) -> []FdbResult
   search_cron_tx(address: string, chain: string, topic: string) -> FdbCronTxsResult
   search_metadatas(query: []MetadataQuery, ordering: []MetadataOrdering, from: u32, to: u32) -> FdbMetadatasResult
-  send_cron_tx(hash: string, data_key: string, data: string, tx_block_number: u64, tx_hash: string, token_id: string) -> FdbCronTxResult
+  send_cron_tx(hash: string, data: string, tx_block_number: u64, tx_hash: string, token_id: string) -> FdbCronTxResult
   set_clone(transaction_hash: string, meta_contract_id: string, on_metacontract_result: bool, data: string, final_error_msg: string)  
   set_cron(transaction_hash: string)  
   set_metadata(transaction_hash: string, meta_contract_id: string, on_metacontract_result: bool, metadatas: []FinalMetadata, final_error_msg: string)  
-  set_metadata_cron(meta_contract: MetaContract, data_key: string, on_metacontract_result: bool, metadatas: []FinalMetadata)  
+  set_metadata_cron(meta_contract: MetaContract, cron: Cron, token_id: string, on_metacontract_result: bool, metadatas: []FinalMetadata) -> FdbMetadatasResult

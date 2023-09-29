@@ -28,18 +28,20 @@ func validateTransaction(hash: string):
     if tx.transaction.method == "metadata":
       metaContract <- Node.get_meta_contract_by_id(tx.transaction.meta_contract_id)
       if metaContract.success:
-        metadatasResult <- Node.get_metadatas(tx.transaction.data_key, "")
+        metadatasResult <- Node.get_metadatas(tx.transaction.data_key, tx.transaction.version)
         MetaContract metaContract.meta.meta_contract_id
         metaContractResult <- MetaContract.on_execute(metaContract.meta, metadatasResult.metadatas, tx.transaction)
         Node.set_metadata(hash, metaContract.meta.meta_contract_id, metaContractResult.result, metaContractResult.metadatas, metaContractResult.error_string)
 
-        if tx.transaction.token_key != "":
-          metaContractToken <- Node.get_meta_contract(tx.transaction.token_key)
-          if metaContractToken.success:
-            metadatasTokenResult <- Node.get_metadatas(tx.transaction.data_key, "")
-            MetaContract metaContractToken.meta.meta_contract_id
-            metaContractTokenResult <- MetaContract.on_execute(metaContractToken.meta, metadatasTokenResult.metadatas, tx.transaction)
-            Node.set_metadata(hash, metaContractToken.meta.meta_contract_id, metaContractTokenResult.result, metaContractTokenResult.metadatas, metaContractTokenResult.error_string)
+        -- if not main contract
+        if metaContract.meta.token_key == "":
+          if tx.transaction.token_key != "":
+            metaContractToken <- Node.get_meta_contract(tx.transaction.token_key)
+            if metaContractToken.success:
+              metadatasTokenResult <- Node.get_metadatas_all_version(tx.transaction.data_key)
+              MetaContract metaContractToken.meta.meta_contract_id
+              metaContractTokenResult <- MetaContract.on_execute(metaContractToken.meta, metadatasTokenResult.metadatas, tx.transaction)
+              Node.set_metadata(hash, metaContractToken.meta.meta_contract_id, metaContractTokenResult.result, metaContractTokenResult.metadatas, metaContractTokenResult.error_string)
 
     if tx.transaction.method == "cron":
       Node.set_cron(hash)
@@ -56,44 +58,65 @@ func getEventCron_30():
   on HOST_PEER_ID:
     results <- Node.get_active_crons()
 
-    evm_logs: *[]EventLogParamResult
-    meta_contract_result: *MetaContractResult
     cron_datas: *Cron
-
-    datas2: *EventLogParamResult
 
     if results.success:  
       cron_length <- MyOp3.array_length(results.crons)
 
       for result <- results.crons par:
         cron_datas <<- result
-
-        from_block = Node.get_cron_tx_latest_block(result.address, result.chain, result.topic)
+        from_block = Node.get_cron_latest_block(result.hash)
         from_block_hex = FevmJsonRpc.decimal_to_hex(from_block)
+
+        evm_logs: *[]EventLogParamResult
+        
         if result.token_type == "erc1155":
-          evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC1155_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
+          if result.abi_url != "":
+            evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, result.abi_url, from_block_hex, "latest", result.address, [result.topic])
+          else:
+            evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC1155_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
         if result.token_type == "erc721":
-          evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC721_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
+          if result.abi_url != "":
+            evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, result.abi_url, from_block_hex, "latest", result.address, [result.topic])
+          else:
+            evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC721_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
 
         for log <- evm_logs:
           datas: *EventLogParamResult
 
           n <- MyOp2.array_length(log)
           for llog <- log par:
+            -- address, token_id, data
             log_data = Node.deserialize_fork(llog.data)
             if log_data.data != "":
               if log_data.data != "00":
                 forks = FevmJsonRpc.decode_abi(["string", "bytes"], log_data.data)
 
-                -- parsing Minted event log (data_key, data)
+                -- parsing Minted event log (data_key/empty, data)
                 if MyOp.array_length(forks) == 2:
-                  metaContract <- Node.get_meta_contract_by_id(result.meta_contract_id)
-                  MetaContract metaContract.meta.meta_contract_id
-                  meta_result <- MetaContract.on_mint(metaContract.meta, forks[0], log_data.token_id, forks[1])
+                  blockContract = Node.get_meta_contract_by_id(result.meta_contract_id)
+                  dataKey = Node.generate_data_key(result.chain, result.address, log_data.token_id)
 
-                  if meta_result.result:
-                    Node.set_metadata_cron(metaContract.meta, forks[0], meta_result.result, meta_result.metadatas)
-                    Node.send_cron_tx(result.hash, forks[0], llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
+                  if blockContract.success:
+                    MetaContract blockContract.meta.meta_contract_id
+                    -- call block contract 1st
+                    meta_result = MetaContract.on_mint(blockContract.meta, dataKey, log_data.token_id, forks[1])
+
+                    if meta_result.result:
+                      resultMetadataCron = Node.set_metadata_cron(blockContract.meta, result, log_data.token_id, meta_result.result, meta_result.metadatas)
+                      resultCronTx = Node.send_cron_tx(result.hash, llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
+
+                      mainContract = Node.get_meta_contract(result.token_key)
+
+                      if mainContract.success:
+                        MetaContract mainContract.meta.meta_contract_id
+                        -- call main contract after block contract
+                        mainblock_result = MetaContract.on_mint(mainContract.meta, dataKey, log_data.token_id, forks[1])
+
+                        if mainblock_result.result:
+                          resultMetadataCronMain = Node.set_metadata_cron(mainContract.meta, result, log_data.token_id, mainblock_result.result, mainblock_result.metadatas)
+                          resultCronTxMain = Node.send_cron_tx(result.hash, llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
+
               datas <<- llog
           join datas[n-1]
       join cron_datas[cron_length-1]

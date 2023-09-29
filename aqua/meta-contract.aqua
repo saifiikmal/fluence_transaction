@@ -7,8 +7,10 @@ data FinalMetadata:
   alias: string
   content: string
   loose: i64
+  version: string
 
 data MetaContract:
+  hash: string
   token_key: string
   meta_contract_id: string
   public_key: string

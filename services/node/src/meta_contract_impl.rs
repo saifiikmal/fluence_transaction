@@ -9,7 +9,8 @@ impl Storage {
         let table_schema = format!(
             "
             CREATE TABLE IF NOT EXISTS {} (
-                token_key varchar(255) not null primary key,
+                hash TEXT PRIMARY KEY UNIQUE,
+                token_key varchar(255) null,
                 meta_contract_id varchar(255) null,
                 public_key varchar(255) null,
                 cid varchar(255) null
@@ -30,8 +31,9 @@ impl Storage {
      */
     pub fn write_meta_contract(&self, contract: MetaContract) -> Result<(), ServiceError> {
         let s = format!(
-            "insert into {} (token_key, meta_contract_id, public_key, cid) values ('{}', '{}', '{}', '{}')",
+            "insert into {} (hash, token_key, meta_contract_id, public_key, cid) values ('{}', '{}', '{}', '{}', '{}')",
             META_CONTRACT_TABLE_NAME,
+            contract.hash,
             contract.token_key,
             contract.meta_contract_id,
             contract.public_key,

@@ -29,27 +29,32 @@
             (seq
              (seq
               (seq
-               (call %init_peer_id% ("transaction" "get_metadatas") [tx-1.$.transaction.data_key! ""] metadatasResult)
+               (call %init_peer_id% ("transaction" "get_metadatas") [tx-1.$.transaction.data_key! tx-1.$.transaction.version!] metadatasResult)
                (call %init_peer_id% (metaContract.$.meta.meta_contract_id! "on_execute") [metaContract.$.meta! metadatasResult.$.metadatas! tx-1.$.transaction!] metaContractResult)
               )
               (call %init_peer_id% ("transaction" "set_metadata") [tx-0.$.hash! metaContract.$.meta.meta_contract_id! metaContractResult.$.result! metaContractResult.$.metadatas! metaContractResult.$.error_string!])
              )
              (xor
-              (mismatch tx-1.$.transaction.token_key! ""
-               (seq
-                (call %init_peer_id% ("transaction" "get_meta_contract") [tx-1.$.transaction.token_key!] metaContractToken)
-                (xor
-                 (match metaContractToken.$.success! true
-                  (seq
-                   (seq
-                    (call %init_peer_id% ("transaction" "get_metadatas") [tx-1.$.transaction.data_key! ""] metadatasTokenResult)
-                    (call %init_peer_id% (metaContractToken.$.meta.meta_contract_id! "on_execute") [metaContractToken.$.meta! metadatasTokenResult.$.metadatas! tx-1.$.transaction!] metaContractTokenResult)
+              (match metaContract.$.meta.token_key! ""
+               (xor
+                (mismatch tx-1.$.transaction.token_key! ""
+                 (seq
+                  (call %init_peer_id% ("transaction" "get_meta_contract") [tx-1.$.transaction.token_key!] metaContractToken)
+                  (xor
+                   (match metaContractToken.$.success! true
+                    (seq
+                     (seq
+                      (call %init_peer_id% ("transaction" "get_metadatas_all_version") [tx-1.$.transaction.data_key!] metadatasTokenResult)
+                      (call %init_peer_id% (metaContractToken.$.meta.meta_contract_id! "on_execute") [metaContractToken.$.meta! metadatasTokenResult.$.metadatas! tx-1.$.transaction!] metaContractTokenResult)
+                     )
+                     (call %init_peer_id% ("transaction" "set_metadata") [tx-0.$.hash! metaContractToken.$.meta.meta_contract_id! metaContractTokenResult.$.result! metaContractTokenResult.$.metadatas! metaContractTokenResult.$.error_string!])
+                    )
                    )
-                   (call %init_peer_id% ("transaction" "set_metadata") [tx-0.$.hash! metaContractToken.$.meta.meta_contract_id! metaContractTokenResult.$.result! metaContractTokenResult.$.metadatas! metaContractTokenResult.$.error_string!])
+                   (call %init_peer_id% ("op" "noop") [])
                   )
                  )
-                 (call %init_peer_id% ("op" "noop") [])
                 )
+                (call %init_peer_id% ("op" "noop") [])
                )
               )
               (call %init_peer_id% ("op" "noop") [])

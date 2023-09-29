@@ -21,10 +21,12 @@ pub struct Cron {
     pub meta_contract_id: String,
     pub node_url: String,
     pub public_key: String,
+    pub abi_url: String,
+    pub last_processed_block: u64,
 }
 
 impl Cron {
-    pub fn new(token_key: String, address: String, topic: String, token_type: String, chain: String, status: i64, meta_contract_id: String, node_url: String, public_key: String) -> Self {
+    pub fn new(token_key: String, address: String, topic: String, token_type: String, chain: String, status: i64, meta_contract_id: String, node_url: String, public_key: String, abi_url: String, last_processed_block: u64) -> Self {
       let hash = Self::generate_hash(address.clone(), topic.clone(), chain.clone());
 
       Self {
@@ -38,6 +40,8 @@ impl Cron {
           meta_contract_id,
           node_url,
           public_key,
+          abi_url,
+          last_processed_block,
       }
     }
 
@@ -60,21 +64,6 @@ impl Cron {
     }
 }
 
-#[marine]
-#[derive(Debug, Default, Clone, Serialize)]
-pub struct CronResult {
-    pub hash: String,
-    pub token_key: String,
-    pub address: String,
-    pub topic: String,
-    pub token_type: String,
-    pub chain: String,
-    pub status: i64,
-    pub meta_contract_id: String,
-    pub node_url: String,
-    pub public_key: String,
-}
-
 #[derive(Deserialize)]
 pub struct SerdeCron {
     pub action: String,
@@ -86,6 +75,7 @@ pub struct SerdeCron {
     pub status: i64,
     // pub meta_contract_id: String,
     pub node_url: String,
+    pub abi_url: String,
 }
 
 impl Storage {
@@ -103,7 +93,8 @@ impl Storage {
             meta_contract_id varchar(255) null,
             node_url text null,
             last_processed_block integer not null default(0),
-            public_key TEXT not null
+            public_key TEXT not null,
+            abi_url TEXT null
         )",
             CRON_TABLE_NAME
         );
@@ -120,7 +111,7 @@ impl Storage {
      */
     pub fn write_cron(&self, cron: Cron) -> Result<(), ServiceError> {
         let s = format!(
-            "insert into {} (hash, token_key, address, token_type, chain, topic, status, last_processed_block, meta_contract_id, node_url, public_key) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')",
+            "insert into {} (hash, token_key, address, token_type, chain, topic, status, last_processed_block, meta_contract_id, node_url, public_key, abi_url) values ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')",
             CRON_TABLE_NAME,
             cron.hash,
             cron.token_key,
@@ -129,10 +120,11 @@ impl Storage {
             cron.chain,
             cron.topic,
             cron.status,
-            0,
+            cron.last_processed_block,
             cron.meta_contract_id,
             cron.node_url,
             cron.public_key,
+            cron.abi_url,
         );
 
         let result = Storage::execute(s);
@@ -218,6 +210,27 @@ impl Storage {
                   Err(InternalError(e.to_string()))
               }
           }
+    }
+
+    pub fn update_cron_block_no(&self, hash: String, last_block_no: u64) -> Result<(), ServiceError> {
+      let statement = format!(
+        "
+          update {}
+          set last_processed_block = {}
+          where hash = '{}';
+          ",
+            CRON_TABLE_NAME, last_block_no, hash
+        );
+
+        let result = Storage::execute(statement);
+
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                log::info!("{}", e.to_string());
+                Err(InternalError(e.to_string()))
+            }
+        }
     }
 
     pub fn get_cron_by_hash(&self, hash: String) -> Result<Cron, ServiceError> {

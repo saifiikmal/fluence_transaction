@@ -8,6 +8,7 @@ pub struct Metadata {
     pub token_key: String,
     pub data_key: String,
     pub meta_contract_id: String,
+    pub token_id: String,
     pub alias: String,
     pub cid: String,
     pub public_key: String,
@@ -16,7 +17,7 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn new(data_key: String, token_key: String, meta_contract_id: String, alias: String, cid: String, 
+    pub fn new(data_key: String, token_key: String, meta_contract_id: String, token_id: String, alias: String, cid: String, 
       public_key: String, version: String, loose: i64) -> Self {
         let hash = Self::generate_hash(
           data_key.clone(), 
@@ -31,6 +32,7 @@ impl Metadata {
             token_key,
             data_key,
             meta_contract_id,
+            token_id,
             alias,
             cid,
             public_key,
@@ -68,7 +70,7 @@ impl Metadata {
         hasher.update(
             format!(
                 "{}{}",
-                chain_id, token_address,
+                chain_id.to_lowercase(), token_address.to_lowercase(),
             )
             .as_bytes(),
         );
@@ -84,7 +86,7 @@ impl Metadata {
         hasher.update(
             format!(
                 "{}{}{}",
-                chain_id, token_address, token_id,
+                chain_id.to_lowercase(), token_address.to_lowercase(), token_id.to_lowercase(),
             )
             .as_bytes(),
         );
@@ -99,6 +101,7 @@ pub struct FinalMetadata {
     pub alias: String,
     pub content: String,
     pub loose: i64,
+    pub version: String,
 }
 
 #[marine]
