@@ -78,7 +78,7 @@ impl Storage {
           set cid = '{}'
           where data_key = '{}' AND version = '{}' AND meta_contract_id = '{}' AND alias = '{}' AND public_key = '{}';
           ",
-            METADATAS_TABLE_NAME, cid, data_key, meta_contract_id, version, alias, public_key
+            METADATAS_TABLE_NAME, cid, data_key, version, meta_contract_id, alias, public_key
         );
 
         let result = Storage::execute(s);

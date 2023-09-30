@@ -3,7 +3,7 @@ import "meta-contract.aqua"
 import "fevm_json_rpc.aqua"
 
 const NODE_SERVICE_ID = "transaction"
-const CONTRACT_SERVICE_ID = "8755a3a2-7e91-4e9e-8885-53955e927ebe"
+const CONTRACT_SERVICE_ID = "87aa5538-03b5-4b49-a344-f2e300e9b5d4"
 const ERC1155_ABI_URL = "https://ipfs.xfero.io/ipfs/QmSiZUtqkbEZPPFMN9ZihSbPskNxqkjBpAfB2NmwLv11N7?filename=CollaBeatNFT-abi.json"
 const ERC721_ABI_URL = "https://ipfs.xfero.io/ipfs/QmWmkDbQ9KA6yLR8C8TuavLwyk2g6TfHyixG5gwTRem3Nw?filename=ERC721_0x3Zero-abi.json"
 
@@ -202,4 +202,10 @@ func get_crons() -> FdbCronsResult:
 func decode_event(data: string) -> []string:
   on HOST_PEER_ID:
     result <- FevmJsonRpc.decode_abi(["string", "bytes"], data)
+  <- result
+
+func mc_on_clone() -> bool:
+  on HOST_PEER_ID:
+    MetaContract CONTRACT_SERVICE_ID
+    result <- MetaContract.on_clone()
   <- result
