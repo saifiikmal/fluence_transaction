@@ -2,6 +2,7 @@
   "query": [
     {
       "column": "method",
+      "op": "=",
       "query": "metadata"
     }
   ],

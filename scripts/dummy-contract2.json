@@ -1,10 +1,10 @@
 {
   "request": {
-    "meta_contract_id": "17a320dd-824e-49eb-9465-eee74b57b547",
+    "meta_contract_id": "279329fe-0a02-4d38-9047-a68e5dc02721",
     "alias": "",
     "public_key": "0xEe1F0084514f12e6F02557E43F76669d81ef0022",
-    "signature": "0xe8bb1d47d59702ea0c49735e31c9f7d9ca1c2968bedc00cfa5a35a5045fa15ca0b7459feb54b0d5cee1af611e78be83ad6742ef24ba7bec6ece65158c8b7687c1b",
-    "data": "17a320dd-824e-49eb-9465-eee74b57b547",
+    "signature": "0xffa7a82376de15c6c4efa1d764cbc06ebe65a9937e81d246e94864cd7500f75062b861224350c1d1789bf8fad399d58520e2bcbf8e6274c768d8463bd381de501b",
+    "data": "{\"is_registry\":true,\"registry_id\":\"0x01\",\"registry_name\":\"metadata\",\"meta_contract_id\":\"279329fe-0a02-4d38-9047-a68e5dc02721\"}",
     "method": "contract",
     "chain_id": "",
     "token_address": "",

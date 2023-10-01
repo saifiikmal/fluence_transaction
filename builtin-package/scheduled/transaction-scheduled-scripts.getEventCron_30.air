@@ -137,7 +137,26 @@
                                          (seq
                                           (seq
                                            (seq
-                                            (call %init_peer_id% ("transaction" "set_metadata_cron") [get_meta_contract_by_id.$.meta! result-0 deserialize_fork.$.token_id! on_mint.$.result! on_mint.$.metadatas!] set_metadata_cron)
+                                            (seq
+                                             (call %init_peer_id% ("transaction" "get_registry_by_id") ["0x01"] get_registry_by_id)
+                                             (xor
+                                              (match get_registry_by_id.$.success! true
+                                               (seq
+                                                (call %init_peer_id% ("transaction" "get_meta_contract_by_id") [get_registry_by_id.$.registry.meta_contract_id!] get_meta_contract_by_id-0)
+                                                (xor
+                                                 (match get_meta_contract_by_id-0.$.success! true
+                                                  (seq
+                                                   (call %init_peer_id% (get_registry_by_id.$.registry.meta_contract_id! "on_post_mint") [on_mint.$.metadatas! get_meta_contract_by_id-0.$.meta! generate_data_key result-0.$.address! result-0.$.chain! deserialize_fork.$.token_id!] on_post_mint)
+                                                   (call %init_peer_id% ("transaction" "set_metadata_cron") ["0x01" result-0 deserialize_fork.$.token_id! on_post_mint.$.result! on_post_mint.$.metadatas!] set_metadata_cron)
+                                                  )
+                                                 )
+                                                 (call %init_peer_id% ("op" "noop") [])
+                                                )
+                                               )
+                                              )
+                                              (call %init_peer_id% ("transaction" "set_metadata_cron") [get_meta_contract_by_id.$.meta.meta_contract_id! result-0 deserialize_fork.$.token_id! on_mint.$.result! on_mint.$.metadatas!] set_metadata_cron-0)
+                                             )
+                                            )
                                             (call %init_peer_id% ("transaction" "send_cron_tx") [result-0.$.hash! llog-0.$.data! llog-0.$.block_number! llog-0.$.transaction_hash! deserialize_fork.$.token_id!] send_cron_tx)
                                            )
                                            (call %init_peer_id% ("transaction" "get_meta_contract") [result-0.$.token_key!] get_meta_contract)
@@ -149,7 +168,7 @@
                                              (xor
                                               (match on_mint-0.$.result! true
                                                (seq
-                                                (call %init_peer_id% ("transaction" "set_metadata_cron") [get_meta_contract.$.meta! result-0 deserialize_fork.$.token_id! on_mint-0.$.result! on_mint-0.$.metadatas!] set_metadata_cron-0)
+                                                (call %init_peer_id% ("transaction" "set_metadata_cron") [get_meta_contract.$.meta.meta_contract_id! result-0 deserialize_fork.$.token_id! on_mint-0.$.result! on_mint-0.$.metadatas!] set_metadata_cron-1)
                                                 (call %init_peer_id% ("transaction" "send_cron_tx") [result-0.$.hash! llog-0.$.data! llog-0.$.block_number! llog-0.$.transaction_hash! deserialize_fork.$.token_id!] send_cron_tx-0)
                                                )
                                               )

@@ -4,7 +4,7 @@
     "alias": "",
     "public_key": "0xee1f0084514f12e6f02557e43f76669d81ef0022",
     "signature": "0x4870d187258a3c3e07ccadf8f8afda77b2bcd731bc1757dd079ff738f362b8b57c4bd2cc2e4132ed4526cf210c590cc7d55b7108bcd8d7379431992f630657501c",
-    "data": "e2e67469-1118-4b73-b611-306e9e8edbbe",
+    "data": "{\"is_registry\":false,\"registry_id\":\"\",\"registry_name\":\"\",\"meta_contract_id\":\"e2e67469-1118-4b73-b611-306e9e8edbbe\"}",
     "method": "contract",
     "chain_id": "80001",
     "token_address": "0x0692f233614802D06e86CBDE6b5D090A9F5d3c10",

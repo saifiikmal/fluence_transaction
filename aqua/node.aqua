@@ -94,6 +94,17 @@ data FdbMetadatasResult:
   err_msg: string
   metadatas: []Metadata
 
+data Registry:
+  registry_id: string
+  registry_name: string
+  meta_contract_id: string
+  public_key: string
+
+data FdbRegistryResult:
+  success: bool
+  err_msg: string
+  registry: Registry
+
 data FdbResult:
   transaction_hash: string
 
@@ -197,6 +208,8 @@ service Node("transaction"):
   get_metadatas_by_tokenkey(token_key: string, token_id: string, version: string) -> FdbMetadatasResult
   get_node_clock() -> FdbClock
   get_pending_transactions() -> FdbTransactionsResult
+  get_registry_by_id(registry_id: string) -> FdbRegistryResult
+  get_registry_by_meta_contract_id(meta_contract_id: string) -> FdbRegistryResult
   get_transaction(hash: string) -> FdbTransactionResult
   get_transaction_receipt(hash: string) -> FdbTransactionReceiptResult
   get_transactions(query: []TransactionQuery, ordering: []TransactionOrdering, from: u32, to: u32) -> FdbTransactionsResult
@@ -209,4 +222,4 @@ service Node("transaction"):
   set_clone(transaction_hash: string, meta_contract_id: string, on_metacontract_result: bool, data: string, final_error_msg: string)  
   set_cron(transaction_hash: string)  
   set_metadata(transaction_hash: string, meta_contract_id: string, on_metacontract_result: bool, metadatas: []FinalMetadata, final_error_msg: string)  
-  set_metadata_cron(meta_contract: MetaContract, cron: Cron, token_id: string, on_metacontract_result: bool, metadatas: []FinalMetadata) -> FdbMetadatasResult
+  set_metadata_cron(meta_contract_id: string, cron: Cron, token_id: string, on_metacontract_result: bool, metadatas: []FinalMetadata) -> FdbMetadatasResult

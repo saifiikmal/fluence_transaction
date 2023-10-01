@@ -7,6 +7,7 @@ use crate::defaults::{SQL_EXECUTE, SQL_QUERY};
 use crate::error::ServiceError;
 use crate::meta_contract::MetaContract;
 use crate::metadatas::Metadata;
+use crate::registry::Registry;
 use crate::transaction::{Transaction, TransactionReceipt};
 use eyre::Result;
 use marine_rs_sdk::MountedBinaryResult;
@@ -38,6 +39,7 @@ pub enum Row {
     CronTx(CronTx),
     Cron(Cron),
     TransactionReceipt(TransactionReceipt),
+    Registry(Registry),
 }
 
 #[inline]

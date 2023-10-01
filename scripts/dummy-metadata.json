@@ -1,10 +1,10 @@
 {
   "request": {
-    "meta_contract_id": "d9ec9e33-c3d3-4a9d-9adb-41fab6e4ad3b",
-    "alias": "",
+    "meta_contract_id": "0x01",
+    "alias": "name",
     "public_key": "0xee1f0084514f12e6f02557e43f76669d81ef0022",
-    "signature": "0xd9b7657acc838dc7a49b8d11d8b68d3f0d889f29f2d1927ccdd8067f9e0542bb289ce4afc7e714fec34653170c3028611b411e442dc11d5faeef968c2dffa01b1c",
-    "data": "{\"hello\":\"is me\"}",
+    "signature": "0x24eb6c01fea817d1ec9c756d723299b8fc7344ca9d59c53881892ea109e37d20320e30a29e8de64da708a2daf689e13f632b080c22416ad039e69040a99b9b201c",
+    "data": "{\"name\":\"CollaBeat\",\"attributes\":[{\"display_type\":\"number\",\"trait_type\":\"No of Beats\",\"value\":3}]}",
     "method": "metadata",
     "chain_id": "80001",
     "token_address": "0x0692f233614802D06e86CBDE6b5D090A9F5d3c10",

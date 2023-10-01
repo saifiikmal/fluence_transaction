@@ -15,6 +15,8 @@ mod storage_impl;
 mod transaction;
 mod transaction_receipt;
 pub mod transactions_impl;
+mod registry;
+mod registry_impl;
 mod validators;
 
 use cron::{SerdeCron, Cron};
@@ -34,13 +36,14 @@ use error::ServiceError::{
     NotSupportedEncryptionType, RecordFound,
 };
 
-use meta_contract::MetaContract;
+use meta_contract::{MetaContract, SerdeMetaContract};
 use metadatas::{FinalMetadata, MetadataOrdering, MetadataQuery, Metadata};
 use result::{
     FdbClock, FdbCronTxResult, FdbCronTxsResult, FdbCronsResult, FdbMetaContractResult,
-    FdbMetadataHistoryResult, FdbMetadatasResult, FdbTransactionResult, FdbTransactionsResult, FdbTransactionReceiptResult,
+    FdbMetadataHistoryResult, FdbMetadatasResult, FdbTransactionResult, FdbTransactionsResult, FdbTransactionReceiptResult, FdbRegistryResult,
 };
 use result::{FdbMetadataResult, FdbResult};
+use serde::de::Error;
 use serde_json::Value;
 use std::time::{SystemTime, UNIX_EPOCH};
 use storage_impl::get_storage;
@@ -79,6 +82,7 @@ pub fn init() {
   storage.create_cron_table();
   storage.create_cron_tx_table();
   storage.create_transaction_receipt_table();
+  storage.create_registry_table();
 }
 
 #[marine]
@@ -178,7 +182,14 @@ pub fn publish(
                     Err(e) => error = Some(e),
                   }
               }
-              meta_contract_id = tx_request.data.clone();
+              let mc_result: Result<SerdeMetaContract, serde_json::Error> = serde_json::from_str(&tx_request.data);
+
+              match mc_result {
+                Ok(serde_mc) => {
+                  meta_contract_id = serde_mc.meta_contract_id.clone();
+                },
+                Err(_) => error = Some(ServiceError::InvalidDataFormatForMethodType(tx_request.method.clone())),
+              }
             }
         } else if tx_request.method.clone() == METHOD_CLONE {
             let data_clone_result: Result<DataTypeClone, serde_json::Error> =
@@ -530,6 +541,17 @@ pub fn get_meta_contract_by_id(meta_contract_id: String) -> FdbMetaContractResul
 }
 
 #[marine]
+pub fn get_registry_by_id(registry_id: String) -> FdbRegistryResult {
+    wrapped_try(|| get_storage().get_registry_by_id(registry_id)).into()
+}
+
+#[marine]
+pub fn get_registry_by_meta_contract_id(meta_contract_id: String) -> FdbRegistryResult {
+    wrapped_try(|| get_storage().get_registry_by_meta_contract_id(meta_contract_id)).into()
+}
+
+
+#[marine]
 pub fn get_pending_transactions() -> FdbTransactionsResult {
     wrapped_try(|| get_storage().get_pending_transactions()).into()
 }
@@ -678,13 +700,13 @@ pub fn set_metadata(
 
 #[marine]
 pub fn set_metadata_cron(
-    meta_contract: MetaContract,
+    meta_contract_id: String,
     cron: Cron,
     token_id: String,
     on_metacontract_result: bool,
     metadatas: Vec<FinalMetadata>,
 ) -> FdbMetadatasResult {
-    validate_metadata_cron(meta_contract, cron, token_id, on_metacontract_result, metadatas)
+    validate_metadata_cron(meta_contract_id, cron, token_id, on_metacontract_result, metadatas)
 }
 
 #[marine]

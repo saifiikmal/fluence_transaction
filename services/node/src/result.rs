@@ -7,7 +7,7 @@ use crate::{
     error::ServiceError,
     meta_contract::MetaContract,
     metadatas::Metadata,
-    transaction::{Transaction, TransactionReceipt},
+    transaction::{Transaction, TransactionReceipt}, registry::Registry,
 };
 
 #[marine]
@@ -220,6 +220,31 @@ impl From<Result<MetaContract, ServiceError>> for FdbMetaContractResult {
                 success: false,
                 err_msg: err.to_string(),
                 meta: MetaContract::default(),
+            },
+        }
+    }
+}
+
+#[marine]
+#[derive(Debug)]
+pub struct FdbRegistryResult {
+    pub success: bool,
+    pub err_msg: String,
+    pub registry: Registry,
+}
+
+impl From<Result<Registry, ServiceError>> for FdbRegistryResult {
+    fn from(result: Result<Registry, ServiceError>) -> Self {
+        match result {
+            Ok(registry) => Self {
+                success: true,
+                err_msg: "".to_string(),
+                registry,
+            },
+            Err(err) => Self {
+                success: false,
+                err_msg: err.to_string(),
+                registry: Registry::default(),
             },
         }
     }

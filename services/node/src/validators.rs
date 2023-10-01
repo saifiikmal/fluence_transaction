@@ -5,11 +5,12 @@ use crate::cron::{Cron, SerdeCron};
 use crate::data_types::DataTypeClone;
 use crate::defaults::{CRON_ACTION_CREATE, CRON_ACTION_UPDATE, CRON_ACTION_UPDATE_STATUS, CRON_STATUS_ENABLE, RECEIPT_STATUS_FAILED, RECEIPT_STATUS_SUCCESS, STATUS_DONE, STATUS_FAILED};
 use crate::metadatas::{FinalMetadata, Metadata, SerdeMetadata};
+use crate::registry::Registry;
 use crate::result::{FdbMetadatasResult};
 use crate::transaction::{TransactionSubset, TransactionReceipt};
 use crate::{error::ServiceError, error::ServiceError::*};
 use crate::{get, put_block};
-use crate::{meta_contract::MetaContract, storage_impl::get_storage};
+use crate::{meta_contract::{MetaContract, SerdeMetaContract}, storage_impl::get_storage};
 
 /**
  * Validated meta contract method type
@@ -23,6 +24,8 @@ pub fn validate_meta_contract(transaction_hash: String) {
 
     let mut transaction = storage.get_transaction(transaction_hash).unwrap().clone();
 
+    let serde_mc: SerdeMetaContract = serde_json::from_str(&transaction.data.clone()).unwrap();
+
     let sm_result = storage.get_meta_contract_by_id_and_pk(transaction.meta_contract_id.clone(), transaction.public_key.clone());
 
     let mut is_update = false;
@@ -33,7 +36,7 @@ pub fn validate_meta_contract(transaction_hash: String) {
                 is_update = true;
             } else {
                 current_meta_contract = contract;
-                current_meta_contract.meta_contract_id = transaction.data.clone();
+                current_meta_contract.meta_contract_id = serde_mc.meta_contract_id.clone();
             }
         }
         Err(ServiceError::RecordNotFound(_)) => {}
@@ -61,8 +64,29 @@ pub fn validate_meta_contract(transaction_hash: String) {
         }
 
         match meta_result {
-            Ok(()) => {}
+          Ok(()) => {}
+          Err(e) => error = Some(e),
+        }
+
+        if serde_mc.is_registry && !serde_mc.registry_id.is_empty() {
+          let reg_result = storage.get_registry_by_id(serde_mc.registry_id.clone());
+
+          match reg_result {
+            Ok(_) => {
+              let crud_reg = storage.update_registry(serde_mc.registry_id.clone(), serde_mc.meta_contract_id.clone());
+
+            },
+            Err(ServiceError::RecordNotFound(_)) => {
+              let new_reg = Registry::new(
+                serde_mc.registry_id.clone(),
+                serde_mc.registry_name.clone(),
+                serde_mc.meta_contract_id.clone(),
+                transaction.public_key.clone(),
+              );
+              let crud_reg = storage.write_registry(new_reg);
+            },
             Err(e) => error = Some(e),
+          }
         }
     }
 
@@ -223,7 +247,7 @@ pub fn validate_metadata(
  * Validated "metadata cron" method type
  */
 pub fn validate_metadata_cron(
-  meta_contract: MetaContract,
+  meta_contract_id: String,
   cron: Cron,
   token_id: String,
   on_metacontract_result: bool,
@@ -242,7 +266,7 @@ pub fn validate_metadata_cron(
       for data in metadatas {
           let result = storage.get_owner_metadata(
               data_key.clone(),
-              meta_contract.meta_contract_id.clone(),
+              meta_contract_id.clone(),
               data.public_key.clone(),
               data.alias.clone(),
               data.version.clone(),
@@ -263,7 +287,7 @@ pub fn validate_metadata_cron(
                   let metadata = Metadata::new(
                       data_key.clone(),
                       cron.token_key.clone(),
-                      meta_contract.meta_contract_id.clone(),
+                      meta_contract_id.clone(),
                       token_id.clone(),
                       data.alias.clone(),
                       content_cid,
