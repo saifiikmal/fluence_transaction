@@ -206,6 +206,7 @@ service Node("transaction"):
   get_metadatas_all_version(data_key: string) -> FdbMetadatasResult
   get_metadatas_by_block(data_key: string, meta_contract_id: string, version: string) -> FdbMetadatasResult
   get_metadatas_by_tokenkey(token_key: string, token_id: string, version: string) -> FdbMetadatasResult
+  get_metadatas_count(data_key: string, version: string) -> u64
   get_node_clock() -> FdbClock
   get_pending_transactions() -> FdbTransactionsResult
   get_registry_by_id(registry_id: string) -> FdbRegistryResult
@@ -218,6 +219,7 @@ service Node("transaction"):
   publish_batch(txs: []TransactionRequest) -> []FdbResult
   search_cron_tx(address: string, chain: string, topic: string) -> FdbCronTxsResult
   search_metadatas(query: []MetadataQuery, ordering: []MetadataOrdering, from: u32, to: u32) -> FdbMetadatasResult
+  search_metadatas_count(query: []MetadataQuery, ordering: []MetadataOrdering, from: u32, to: u32) -> u64
   send_cron_tx(hash: string, data: string, tx_block_number: u64, tx_hash: string, token_id: string) -> FdbCronTxResult
   set_clone(transaction_hash: string, meta_contract_id: string, on_metacontract_result: bool, data: string, final_error_msg: string)  
   set_cron(transaction_hash: string)  

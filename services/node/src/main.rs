@@ -506,6 +506,11 @@ pub fn get_metadatas(data_key: String, version: String) -> FdbMetadatasResult {
 }
 
 #[marine]
+pub fn get_metadatas_count(data_key: String, version: String) -> u64 {
+    wrapped_try(|| get_storage().get_count_metadata_by_datakey_and_version(data_key, version)).into()
+}
+
+#[marine]
 pub fn get_metadatas_by_tokenkey(token_key: String, token_id: String, version: String) -> FdbMetadatasResult {
     wrapped_try(|| get_storage().get_metadata_by_tokenkey_and_tokenid(token_key, token_id, version)).into()
 }
@@ -528,6 +533,16 @@ pub fn search_metadatas(
     to: u32,
 ) -> FdbMetadatasResult {
     wrapped_try(|| get_storage().search_metadatas(query, ordering, from, to)).into()
+}
+
+#[marine]
+pub fn search_metadatas_count(
+    query: Vec<MetadataQuery>,
+    ordering: Vec<MetadataOrdering>,
+    from: u32,
+    to: u32,
+) -> u64 {
+    wrapped_try(|| get_storage().search_metadatas_count(query, ordering, from, to)).into()
 }
 
 #[marine]

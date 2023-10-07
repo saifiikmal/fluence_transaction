@@ -30,6 +30,11 @@ pub struct RQLiteResult {
     pub rows: Option<Vec<Row>>,
 }
 
+#[derive(Debug, Default, Clone, Deserialize)]
+pub struct Count {
+  pub count: u64,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum Row {
@@ -40,6 +45,7 @@ pub enum Row {
     Cron(Cron),
     TransactionReceipt(TransactionReceipt),
     Registry(Registry),
+    Count(Count),
 }
 
 #[inline]

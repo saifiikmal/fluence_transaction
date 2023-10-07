@@ -127,6 +127,22 @@ impl Storage {
         }
     }
 
+    pub fn get_count_metadata_by_datakey_and_version(
+      &self,
+      data_key: String,
+      version: String,
+  ) -> u64 {
+      let statement = format!(
+          "SELECT COUNT(*) as count FROM {} WHERE data_key = '{}' AND version = '{}'",
+          METADATAS_TABLE_NAME,
+          data_key.clone(),
+          version.clone()
+      );
+
+      let result = Storage::read(statement).unwrap();
+      count(result)
+  }
+
     pub fn get_metadata_by_tokenkey_and_tokenid(
         &self,
         token_key: String,
@@ -268,6 +284,37 @@ impl Storage {
           Err(e) => Err(e),
       }
     }
+
+    pub fn search_metadatas_count(&self, query: Vec<MetadataQuery>, ordering: Vec<MetadataOrdering>, from: u32, to: u32) -> u64 {
+      
+      let mut query_str = "".to_string();
+      let mut ordering_str = "".to_string();
+      let mut limit_str = "".to_string();
+
+      if query.len() > 0 {
+        let queries: Vec<String> = query.into_iter().map(|param| format!("{} {} '{}'", param.column, param.op, param.query)).collect();
+
+        query_str = format!("WHERE {}",queries.join(" AND "));
+      }
+
+      if ordering.len() > 0 {
+        let orders: Vec<String> = ordering.into_iter().map(|param| format!("{} {}", param.column, param.sort)).collect();
+      
+        ordering_str = format!("ORDER BY {}",orders.join(", "));
+      }
+      if to > 0 {
+        limit_str = format!("LIMIT {},{}", from, to);
+      }
+
+      
+      let s = format!("SELECT COUNT(*) as count FROM {} {} {} {}", METADATAS_TABLE_NAME, query_str, ordering_str, limit_str);
+
+      log::info!("{}", s.clone());
+
+      let result = Storage::read(s).unwrap();
+
+      count(result)
+    }
 }
 
 pub fn read(result: RQLiteResult) -> Result<Vec<Metadata>, ServiceError> {
@@ -289,5 +336,20 @@ pub fn read(result: RQLiteResult) -> Result<Vec<Metadata>, ServiceError> {
   }
 
   Ok(metas)
+}
+
+pub fn count(result: RQLiteResult) -> u64 {
+  let mut num_rows = 0;
+  if result.rows.is_some() {
+    for row in result.rows.unwrap() {
+        // log::info!("row: {:?}", row);
+        
+        match row {
+            Row::Count(c) => num_rows = c.count,
+            _ => num_rows = 0,
+        }
+    }
+  }
+  num_rows
 }
 
