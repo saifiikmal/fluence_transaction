@@ -9,20 +9,13 @@ data FinalMetadata:
   loose: i64
   version: string
 
-data MetaContract:
-  hash: string
-  token_key: string
-  meta_contract_id: string
-  public_key: string
-  cid: string
-
 data MetaContractResult:
   result: bool
   metadatas: []FinalMetadata
   error_string: string
   loose: i64
 
-service MetaContract("meta-contract"):
+service MetaContract("metacontract"):
   on_clone() -> bool
   on_execute(contract: MetaContract, metadatas: []Metadata, transaction: Transaction) -> MetaContractResult
   on_mint(contract: MetaContract, data_key: string, token_id: string, data: string) -> MetaContractResult

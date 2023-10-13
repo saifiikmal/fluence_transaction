@@ -85,6 +85,24 @@ impl Storage {
         Ok(())
     }
 
+    pub fn update_metadatas_metacontract(
+      &self,
+      prev_meta_contract_id: String,
+      new_meta_contract_id: String,
+  ) -> Result<(), ServiceError> {
+      let s = format!(
+        "
+        update {}
+        set meta_contract_id = '{}'
+        where meta_contract_id = '{}';
+        ",
+          METADATAS_TABLE_NAME, new_meta_contract_id, prev_meta_contract_id,
+      );
+
+      let result = Storage::execute(s);
+      Ok(())
+  }
+
     pub fn get_owner_metadata(
         &self,
         data_key: String,

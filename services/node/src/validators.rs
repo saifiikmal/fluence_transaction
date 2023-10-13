@@ -68,6 +68,27 @@ pub fn validate_meta_contract(transaction_hash: String) {
           Err(e) => error = Some(e),
         }
 
+        if !serde_mc.migrate_from.is_empty() {
+          let migrate_contract = storage.get_meta_contract_by_id(serde_mc.migrate_from.clone());
+
+          log::info!("migrate_from: {:?}", serde_mc.migrate_from.clone());
+
+          match migrate_contract {
+            Ok(mc) => {
+              if mc.public_key.to_lowercase() == transaction.public_key.to_lowercase() {
+                let upd_mc = storage.update_metadatas_metacontract(serde_mc.migrate_from.clone(), serde_mc.meta_contract_id.clone());
+                log::info!("proceed migrate_from: {:?} to {:?}", serde_mc.migrate_from.clone(), serde_mc.meta_contract_id.clone());
+              } else {
+                error = Some(InternalError(f!("No permission to change other's user meta contract")));
+              }
+            },
+            Err(ServiceError::RecordNotFound(_)) => {
+              error = Some(RecordNotFound(f!("{serde_mc.migrate_from}")));
+            },
+            Err(e) => error = Some(e),
+          }
+        }
+
         if serde_mc.is_registry && !serde_mc.registry_id.is_empty() {
           let reg_result = storage.get_registry_by_id(serde_mc.registry_id.clone());
 

@@ -54,4 +54,5 @@ pub struct SerdeMetaContract {
   pub registry_id: String,
   pub registry_name: String,
   pub meta_contract_id: String,
+  pub migrate_from: String,
 }

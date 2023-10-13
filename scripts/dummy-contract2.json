@@ -1,10 +1,10 @@
 {
   "request": {
-    "meta_contract_id": "be9d6bf4-023b-40e6-9864-82f17f295eae",
+    "meta_contract_id": "9d5c269e-d893-48fe-a1b7-545929da8d5e",
     "alias": "",
-    "public_key": "0xe55b0663c9c24613bb0a420b6afe7d904d4fa350",
-    "signature": "0x3fb15880b41d341426686f8fb213bfaa76f38d18256512ccf8326a5f4d00f193715036ded258ca22fe28ed6e533851aa7444f0a42a6da3f7e33b3f6f6b82334b1c",
-    "data": "{\"is_registry\":false,\"registry_id\":\"\",\"registry_name\":\"\",\"meta_contract_id\":\"be9d6bf4-023b-40e6-9864-82f17f295eae\"}",
+    "public_key": "0xEe1F0084514f12e6F02557E43F76669d81ef0022",
+    "signature": "0x6dc6da24733290cae2068d3961a9109293d6c9c57274a81980c6502df83658f85724087a1ffe595cf2ad88313431b962948d5d13dd5fc52df54c72c16bc55cb21c",
+    "data": "{\"is_registry\":false,\"registry_id\":\"\",\"registry_name\":\"\",\"meta_contract_id\":\"9d5c269e-d893-48fe-a1b7-545929da8d5e\",\"migrate_from\":\"17a320dd-824e-49eb-9465-eee74b57b547\"}",
     "method": "contract",
     "chain_id": "",
     "token_address": "",
