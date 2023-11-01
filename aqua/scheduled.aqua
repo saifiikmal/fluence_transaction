@@ -27,13 +27,14 @@ func validateTransaction(hash: string):
     
     if tx.transaction.method == "metadata":
       metaContract <- Node.get_meta_contract_by_id(tx.transaction.meta_contract_id)
+
       if metaContract.success:
         metadatasResult <- Node.get_metadatas(tx.transaction.data_key, tx.transaction.version)
         MetaContract metaContract.meta.meta_contract_id
         metaContractResult <- MetaContract.on_execute(metaContract.meta, metadatasResult.metadatas, tx.transaction)
         Node.set_metadata(hash, metaContract.meta.meta_contract_id, metaContractResult.result, metaContractResult.metadatas, metaContractResult.error_string)
 
-        -- if not main contract
+        -- if main contract
         if metaContract.meta.token_key == "":
           if tx.transaction.token_key != "":
             metaContractToken <- Node.get_meta_contract(tx.transaction.token_key)
@@ -42,6 +43,17 @@ func validateTransaction(hash: string):
               MetaContract metaContractToken.meta.meta_contract_id
               metaContractTokenResult <- MetaContract.on_execute(metaContractToken.meta, metadatasTokenResult.metadatas, tx.transaction)
               Node.set_metadata(hash, metaContractToken.meta.meta_contract_id, metaContractTokenResult.result, metaContractTokenResult.metadatas, metaContractTokenResult.error_string)
+      else:
+        registry <- Node.get_registry_by_id(tx.transaction.meta_contract_id)
+
+        if registry.success:
+          regContract <- Node.get_meta_contract_by_id(registry.registry.meta_contract_id)
+
+          if regContract.success:
+            regMetadatasResult <- Node.get_metadatas(tx.transaction.data_key, tx.transaction.version)
+            MetaContract registry.registry.meta_contract_id
+            regMetaContractResult <- MetaContract.on_execute(regContract.meta, regMetadatasResult.metadatas, tx.transaction)
+            Node.set_metadata(hash, tx.transaction.meta_contract_id, regMetaContractResult.result, regMetaContractResult.metadatas, regMetaContractResult.error_string)
 
     if tx.transaction.method == "cron":
       Node.set_cron(hash)
@@ -86,7 +98,6 @@ func getEventCron_30():
 
           n <- MyOp2.array_length(log)
           for llog <- log par:
-            -- address, token_id, data
             log_data = Node.deserialize_fork(llog.data)
             if log_data.data != "":
               if log_data.data != "00":
@@ -103,7 +114,19 @@ func getEventCron_30():
                     meta_result = MetaContract.on_mint(blockContract.meta, dataKey, log_data.token_id, forks[1])
 
                     if meta_result.result:
-                      resultMetadataCron = Node.set_metadata_cron(blockContract.meta, result, log_data.token_id, meta_result.result, meta_result.metadatas)
+                      registry = Node.get_registry_by_id("0x01")
+
+                      if registry.success:
+                        regContract = Node.get_meta_contract_by_id(registry.registry.meta_contract_id)
+
+                        if regContract.success:
+                          MetaContract registry.registry.meta_contract_id
+
+                          reg_result = MetaContract.on_post_mint(meta_result.metadatas, regContract.meta, dataKey, result.address, result.chain, log_data.token_id)
+                          regResultMetadataCron = Node.set_metadata_cron("0x01", result, log_data.token_id, reg_result.result, reg_result.metadatas)
+                      else:
+                        resultMetadataCron = Node.set_metadata_cron(blockContract.meta.meta_contract_id, result, log_data.token_id, meta_result.result, meta_result.metadatas)
+
                       resultCronTx = Node.send_cron_tx(result.hash, llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
 
                       mainContract = Node.get_meta_contract(result.token_key)
@@ -114,7 +137,7 @@ func getEventCron_30():
                         mainblock_result = MetaContract.on_mint(mainContract.meta, dataKey, log_data.token_id, forks[1])
 
                         if mainblock_result.result:
-                          resultMetadataCronMain = Node.set_metadata_cron(mainContract.meta, result, log_data.token_id, mainblock_result.result, mainblock_result.metadatas)
+                          resultMetadataCronMain = Node.set_metadata_cron(mainContract.meta.meta_contract_id, result, log_data.token_id, mainblock_result.result, mainblock_result.metadatas)
                           resultCronTxMain = Node.send_cron_tx(result.hash, llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
 
               datas <<- llog

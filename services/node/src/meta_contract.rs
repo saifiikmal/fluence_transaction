@@ -47,3 +47,12 @@ impl MetaContract {
   }
 
 }
+
+#[derive(Deserialize)]
+pub struct SerdeMetaContract {
+  pub is_registry: bool,
+  pub registry_id: String,
+  pub registry_name: String,
+  pub meta_contract_id: String,
+  pub migrate_from: String,
+}

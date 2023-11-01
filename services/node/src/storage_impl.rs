@@ -7,6 +7,7 @@ use crate::defaults::{SQL_EXECUTE, SQL_QUERY};
 use crate::error::ServiceError;
 use crate::meta_contract::MetaContract;
 use crate::metadatas::Metadata;
+use crate::registry::Registry;
 use crate::transaction::{Transaction, TransactionReceipt};
 use eyre::Result;
 use marine_rs_sdk::MountedBinaryResult;
@@ -29,6 +30,11 @@ pub struct RQLiteResult {
     pub rows: Option<Vec<Row>>,
 }
 
+#[derive(Debug, Default, Clone, Deserialize)]
+pub struct Count {
+  pub count: u64,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum Row {
@@ -38,6 +44,8 @@ pub enum Row {
     CronTx(CronTx),
     Cron(Cron),
     TransactionReceipt(TransactionReceipt),
+    Registry(Registry),
+    Count(Count),
 }
 
 #[inline]

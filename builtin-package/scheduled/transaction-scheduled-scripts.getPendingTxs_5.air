@@ -61,7 +61,29 @@
              )
             )
            )
-           (call %init_peer_id% ("op" "noop") [])
+           (seq
+            (call %init_peer_id% ("transaction" "get_registry_by_id") [tx-1.$.transaction.meta_contract_id!] registry)
+            (xor
+             (match registry.$.success! true
+              (seq
+               (call %init_peer_id% ("transaction" "get_meta_contract_by_id") [registry.$.registry.meta_contract_id!] regContract)
+               (xor
+                (match regContract.$.success! true
+                 (seq
+                  (seq
+                   (call %init_peer_id% ("transaction" "get_metadatas") [tx-1.$.transaction.data_key! tx-1.$.transaction.version!] regMetadatasResult)
+                   (call %init_peer_id% (registry.$.registry.meta_contract_id! "on_execute") [regContract.$.meta! regMetadatasResult.$.metadatas! tx-1.$.transaction!] regMetaContractResult)
+                  )
+                  (call %init_peer_id% ("transaction" "set_metadata") [tx-0.$.hash! tx-1.$.transaction.meta_contract_id! regMetaContractResult.$.result! regMetaContractResult.$.metadatas! regMetaContractResult.$.error_string!])
+                 )
+                )
+                (call %init_peer_id% ("op" "noop") [])
+               )
+              )
+             )
+             (call %init_peer_id% ("op" "noop") [])
+            )
+           )
           )
          )
         )

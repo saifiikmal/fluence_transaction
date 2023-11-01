@@ -3,7 +3,7 @@ import "meta-contract.aqua"
 import "fevm_json_rpc.aqua"
 
 const NODE_SERVICE_ID = "transaction"
-const CONTRACT_SERVICE_ID = "8755a3a2-7e91-4e9e-8885-53955e927ebe"
+const CONTRACT_SERVICE_ID = "87aa5538-03b5-4b49-a344-f2e300e9b5d4"
 const ERC1155_ABI_URL = "https://ipfs.xfero.io/ipfs/QmSiZUtqkbEZPPFMN9ZihSbPskNxqkjBpAfB2NmwLv11N7?filename=CollaBeatNFT-abi.json"
 const ERC721_ABI_URL = "https://ipfs.xfero.io/ipfs/QmWmkDbQ9KA6yLR8C8TuavLwyk2g6TfHyixG5gwTRem3Nw?filename=ERC721_0x3Zero-abi.json"
 
@@ -36,13 +36,14 @@ func validateTransaction(hash: string):
     
     if tx.transaction.method == "metadata":
       metaContract <- Node.get_meta_contract_by_id(tx.transaction.meta_contract_id)
+
       if metaContract.success:
         metadatasResult <- Node.get_metadatas(tx.transaction.data_key, tx.transaction.version)
         MetaContract metaContract.meta.meta_contract_id
         metaContractResult <- MetaContract.on_execute(metaContract.meta, metadatasResult.metadatas, tx.transaction)
         Node.set_metadata(hash, metaContract.meta.meta_contract_id, metaContractResult.result, metaContractResult.metadatas, metaContractResult.error_string)
 
-        -- if not main contract
+        -- if main contract
         if metaContract.meta.token_key == "":
           if tx.transaction.token_key != "":
             metaContractToken <- Node.get_meta_contract(tx.transaction.token_key)
@@ -51,6 +52,17 @@ func validateTransaction(hash: string):
               MetaContract metaContractToken.meta.meta_contract_id
               metaContractTokenResult <- MetaContract.on_execute(metaContractToken.meta, metadatasTokenResult.metadatas, tx.transaction)
               Node.set_metadata(hash, metaContractToken.meta.meta_contract_id, metaContractTokenResult.result, metaContractTokenResult.metadatas, metaContractTokenResult.error_string)
+      else:
+        registry <- Node.get_registry_by_id(tx.transaction.meta_contract_id)
+
+        if registry.success:
+          regContract <- Node.get_meta_contract_by_id(registry.registry.meta_contract_id)
+
+          if regContract.success:
+            regMetadatasResult <- Node.get_metadatas(tx.transaction.data_key, tx.transaction.version)
+            MetaContract registry.registry.meta_contract_id
+            regMetaContractResult <- MetaContract.on_execute(regContract.meta, regMetadatasResult.metadatas, tx.transaction)
+            Node.set_metadata(hash, tx.transaction.meta_contract_id, regMetaContractResult.result, regMetaContractResult.metadatas, regMetaContractResult.error_string)
 
     if tx.transaction.method == "cron":
       Node.set_cron(hash)
@@ -138,7 +150,19 @@ func processCron():
                     meta_result = MetaContract.on_mint(blockContract.meta, dataKey, log_data.token_id, forks[1])
 
                     if meta_result.result:
-                      resultMetadataCron = Node.set_metadata_cron(blockContract.meta, result, log_data.token_id, meta_result.result, meta_result.metadatas)
+                      registry = Node.get_registry_by_id("0x01")
+
+                      if registry.success:
+                        regContract = Node.get_meta_contract_by_id(registry.registry.meta_contract_id)
+
+                        if regContract.success:
+                          MetaContract registry.registry.meta_contract_id
+
+                          reg_result = MetaContract.on_post_mint(meta_result.metadatas, regContract.meta, dataKey, result.address, result.chain, log_data.token_id)
+                          regResultMetadataCron = Node.set_metadata_cron("0x01", result, log_data.token_id, reg_result.result, reg_result.metadatas)
+                      else:
+                        resultMetadataCron = Node.set_metadata_cron(blockContract.meta.meta_contract_id, result, log_data.token_id, meta_result.result, meta_result.metadatas)
+
                       resultCronTx = Node.send_cron_tx(result.hash, llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
 
                       mainContract = Node.get_meta_contract(result.token_key)
@@ -149,7 +173,7 @@ func processCron():
                         mainblock_result = MetaContract.on_mint(mainContract.meta, dataKey, log_data.token_id, forks[1])
 
                         if mainblock_result.result:
-                          resultMetadataCronMain = Node.set_metadata_cron(mainContract.meta, result, log_data.token_id, mainblock_result.result, mainblock_result.metadatas)
+                          resultMetadataCronMain = Node.set_metadata_cron(mainContract.meta.meta_contract_id, result, log_data.token_id, mainblock_result.result, mainblock_result.metadatas)
                           resultCronTxMain = Node.send_cron_tx(result.hash, llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
 
               datas <<- llog
@@ -202,4 +226,16 @@ func get_crons() -> FdbCronsResult:
 func decode_event(data: string) -> []string:
   on HOST_PEER_ID:
     result <- FevmJsonRpc.decode_abi(["string", "bytes"], data)
+  <- result
+
+func mc_on_clone() -> bool:
+  on HOST_PEER_ID:
+    MetaContract CONTRACT_SERVICE_ID
+    result <- MetaContract.on_clone()
+  <- result
+
+func get_registry_by_id(registry_id: string) -> FdbRegistryResult:
+  on HOST_PEER_ID:
+    Node NODE_SERVICE_ID
+    result <- Node.get_registry_by_id(registry_id)
   <- result
