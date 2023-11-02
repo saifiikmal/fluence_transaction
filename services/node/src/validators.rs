@@ -167,7 +167,7 @@ pub fn validate_metadata(
                 transaction.meta_contract_id.clone(),
                 data.public_key.clone(),
                 data.alias.clone(),
-                transaction.version.clone(),
+                data.version.clone(),
             );
 
             log::info!("{:?}", result);
@@ -232,7 +232,7 @@ pub fn validate_metadata(
                         data.alias.clone(),
                         content_cid,
                         data.public_key.clone(),
-                        transaction.version.clone(),
+                        data.version.clone(),
                         loose,
                     );
 
