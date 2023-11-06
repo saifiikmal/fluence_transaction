@@ -33,24 +33,34 @@
                   (match result-0.$.token_type! "erc1155"
                    (xor
                     (mismatch result-0.$.abi_url! ""
-                     (seq
-                      (new $array-inline
+                     (xor
+                      (mismatch result-0.$.topic! ""
                        (seq
-                        (ap result-0.$.topic! $array-inline)
-                        (canon %init_peer_id% $array-inline  #array-inline-0)
+                        (new $array-inline
+                         (seq
+                          (ap result-0.$.topic! $array-inline)
+                          (canon %init_peer_id% $array-inline  #array-inline-0)
+                         )
+                        )
+                        (call %init_peer_id% ("fevm_json_rpc" "eth_get_logs") [result-0.$.node_url! result-0.$.abi_url! decimal_to_hex "latest" result-0.$.address! #array-inline-0] $evm_logs)
                        )
                       )
-                      (call %init_peer_id% ("fevm_json_rpc" "eth_get_logs") [result-0.$.node_url! result-0.$.abi_url! decimal_to_hex "latest" result-0.$.address! #array-inline-0] $evm_logs)
+                      (call %init_peer_id% ("fevm_json_rpc" "eth_get_logs") [result-0.$.node_url! result-0.$.abi_url! decimal_to_hex "latest" result-0.$.address! []] $evm_logs)
                      )
                     )
-                    (seq
-                     (new $array-inline-1
+                    (xor
+                     (mismatch result-0.$.topic! ""
                       (seq
-                       (ap result-0.$.topic! $array-inline-1)
-                       (canon %init_peer_id% $array-inline-1  #array-inline-1-0)
+                       (new $array-inline-1
+                        (seq
+                         (ap result-0.$.topic! $array-inline-1)
+                         (canon %init_peer_id% $array-inline-1  #array-inline-1-0)
+                        )
+                       )
+                       (call %init_peer_id% ("fevm_json_rpc" "eth_get_logs") [result-0.$.node_url! "https://ipfs.xfero.io/ipfs/QmSiZUtqkbEZPPFMN9ZihSbPskNxqkjBpAfB2NmwLv11N7?filename=CollaBeatNFT-abi.json" decimal_to_hex "latest" result-0.$.address! #array-inline-1-0] $evm_logs)
                       )
                      )
-                     (call %init_peer_id% ("fevm_json_rpc" "eth_get_logs") [result-0.$.node_url! "https://ipfs.xfero.io/ipfs/QmSiZUtqkbEZPPFMN9ZihSbPskNxqkjBpAfB2NmwLv11N7?filename=CollaBeatNFT-abi.json" decimal_to_hex "latest" result-0.$.address! #array-inline-1-0] $evm_logs)
+                     (call %init_peer_id% ("fevm_json_rpc" "eth_get_logs") [result-0.$.node_url! "https://ipfs.xfero.io/ipfs/QmSiZUtqkbEZPPFMN9ZihSbPskNxqkjBpAfB2NmwLv11N7?filename=CollaBeatNFT-abi.json" decimal_to_hex "latest" result-0.$.address! []] $evm_logs)
                     )
                    )
                   )
@@ -61,24 +71,34 @@
                  (match result-0.$.token_type! "erc721"
                   (xor
                    (mismatch result-0.$.abi_url! ""
-                    (seq
-                     (new $array-inline-2
+                    (xor
+                     (mismatch result-0.$.topic! ""
                       (seq
-                       (ap result-0.$.topic! $array-inline-2)
-                       (canon %init_peer_id% $array-inline-2  #array-inline-2-0)
+                       (new $array-inline-2
+                        (seq
+                         (ap result-0.$.topic! $array-inline-2)
+                         (canon %init_peer_id% $array-inline-2  #array-inline-2-0)
+                        )
+                       )
+                       (call %init_peer_id% ("fevm_json_rpc" "eth_get_logs") [result-0.$.node_url! result-0.$.abi_url! decimal_to_hex "latest" result-0.$.address! #array-inline-2-0] $evm_logs)
                       )
                      )
-                     (call %init_peer_id% ("fevm_json_rpc" "eth_get_logs") [result-0.$.node_url! result-0.$.abi_url! decimal_to_hex "latest" result-0.$.address! #array-inline-2-0] $evm_logs)
+                     (call %init_peer_id% ("fevm_json_rpc" "eth_get_logs") [result-0.$.node_url! result-0.$.abi_url! decimal_to_hex "latest" result-0.$.address! []] $evm_logs)
                     )
                    )
-                   (seq
-                    (new $array-inline-3
+                   (xor
+                    (mismatch result-0.$.topic! ""
                      (seq
-                      (ap result-0.$.topic! $array-inline-3)
-                      (canon %init_peer_id% $array-inline-3  #array-inline-3-0)
+                      (new $array-inline-3
+                       (seq
+                        (ap result-0.$.topic! $array-inline-3)
+                        (canon %init_peer_id% $array-inline-3  #array-inline-3-0)
+                       )
+                      )
+                      (call %init_peer_id% ("fevm_json_rpc" "eth_get_logs") [result-0.$.node_url! "https://ipfs.xfero.io/ipfs/QmWmkDbQ9KA6yLR8C8TuavLwyk2g6TfHyixG5gwTRem3Nw?filename=ERC721_0x3Zero-abi.json" decimal_to_hex "latest" result-0.$.address! #array-inline-3-0] $evm_logs)
                      )
                     )
-                    (call %init_peer_id% ("fevm_json_rpc" "eth_get_logs") [result-0.$.node_url! "https://ipfs.xfero.io/ipfs/QmWmkDbQ9KA6yLR8C8TuavLwyk2g6TfHyixG5gwTRem3Nw?filename=ERC721_0x3Zero-abi.json" decimal_to_hex "latest" result-0.$.address! #array-inline-3-0] $evm_logs)
+                    (call %init_peer_id% ("fevm_json_rpc" "eth_get_logs") [result-0.$.node_url! "https://ipfs.xfero.io/ipfs/QmWmkDbQ9KA6yLR8C8TuavLwyk2g6TfHyixG5gwTRem3Nw?filename=ERC721_0x3Zero-abi.json" decimal_to_hex "latest" result-0.$.address! []] $evm_logs)
                    )
                   )
                  )
@@ -100,10 +120,10 @@
                        (fold log-0 llog-0
                         (par
                          (seq
-                          (call %init_peer_id% ("transaction" "deserialize_fork") [llog-0.$.data!] deserialize_fork)
-                          (xor
-                           (mismatch deserialize_fork.$.data! ""
-                            (seq
+                          (seq
+                           (call %init_peer_id% ("transaction" "deserialize_fork") [llog-0.$.data!] deserialize_fork)
+                           (xor
+                            (mismatch deserialize_fork.$.data! ""
                              (xor
                               (mismatch deserialize_fork.$.data! "00"
                                (seq
@@ -195,11 +215,30 @@
                               )
                               (call %init_peer_id% ("op" "noop") [])
                              )
-                             (ap llog-0 $datas)
+                            )
+                            (seq
+                             (call %init_peer_id% ("transaction" "get_meta_contract_by_id") [result-0.$.meta_contract_id!] get_meta_contract_by_id-1)
+                             (xor
+                              (match get_meta_contract_by_id-1.$.success! true
+                               (seq
+                                (call %init_peer_id% (get_meta_contract_by_id-1.$.meta.meta_contract_id! "on_event") [llog-0 get_meta_contract_by_id-1.$.meta!] on_event)
+                                (xor
+                                 (match on_event.$.result! true
+                                  (seq
+                                   (call %init_peer_id% ("transaction" "set_metadata_cron") ["0x01" result-0 on_event.$.token_id! on_event.$.result! on_event.$.metadatas!] set_metadata_cron-2)
+                                   (call %init_peer_id% ("transaction" "send_cron_tx") [result-0.$.hash! llog-0.$.data! llog-0.$.block_number! llog-0.$.transaction_hash! on_event.$.token_id!] send_cron_tx-1)
+                                  )
+                                 )
+                                 (call %init_peer_id% ("op" "noop") [])
+                                )
+                               )
+                              )
+                              (call %init_peer_id% ("op" "noop") [])
+                             )
                             )
                            )
-                           (call %init_peer_id% ("op" "noop") [])
                           )
+                          (ap llog-0 $datas)
                          )
                          (next llog-0)
                         )

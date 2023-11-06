@@ -84,14 +84,27 @@ func getEventCron_30():
         
         if result.token_type == "erc1155":
           if result.abi_url != "":
-            evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, result.abi_url, from_block_hex, "latest", result.address, [result.topic])
+            if result.topic != "":
+              evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, result.abi_url, from_block_hex, "latest", result.address, [result.topic])
+            else:
+              evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, result.abi_url, from_block_hex, "latest", result.address, [])
           else:
-            evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC1155_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
+            if result.topic != "":
+              evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC1155_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
+            else:
+              evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC1155_ABI_URL, from_block_hex, "latest", result.address, [])
+        
         if result.token_type == "erc721":
           if result.abi_url != "":
-            evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, result.abi_url, from_block_hex, "latest", result.address, [result.topic])
+            if result.topic != "":
+              evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, result.abi_url, from_block_hex, "latest", result.address, [result.topic])
+            else:
+              evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, result.abi_url, from_block_hex, "latest", result.address, [])
           else:
-            evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC721_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
+            if result.topic != "":
+              evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC721_ABI_URL, from_block_hex, "latest", result.address, [result.topic])
+            else:
+              evm_logs <- FevmJsonRpc.eth_get_logs(result.node_url, ERC721_ABI_URL, from_block_hex, "latest", result.address, [])
 
         for log <- evm_logs:
           datas: *EventLogParamResult
@@ -140,6 +153,19 @@ func getEventCron_30():
                           resultMetadataCronMain = Node.set_metadata_cron(mainContract.meta.meta_contract_id, result, log_data.token_id, mainblock_result.result, mainblock_result.metadatas)
                           resultCronTxMain = Node.send_cron_tx(result.hash, llog.data, llog.block_number, llog.transaction_hash, log_data.token_id)
 
-              datas <<- llog
+            else:
+              blockContract2 = Node.get_meta_contract_by_id(result.meta_contract_id)
+
+              if blockContract2.success:
+                MetaContract blockContract2.meta.meta_contract_id
+                -- call block contract 1st
+                meta_result2 = MetaContract.on_event(llog, blockContract2.meta)
+
+                if meta_result2.result:
+                  regResultMetadataCron2 = Node.set_metadata_cron("0x01", result, meta_result2.token_id, meta_result2.result, meta_result2.metadatas)
+                  resultCronTx2 = Node.send_cron_tx(result.hash, llog.data, llog.block_number, llog.transaction_hash, meta_result2.token_id)
+          
+            datas <<- llog
+
           join datas[n-1]
       join cron_datas[cron_length-1]
