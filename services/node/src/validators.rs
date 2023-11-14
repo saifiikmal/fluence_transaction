@@ -296,8 +296,21 @@ pub fn validate_metadata_cron(
           log::info!("{:?}", result);
 
           match result {
-              Ok(data) => {
-                final_metadatas.push(data);
+              Ok(mut d) => {
+                let result_ipfs_dag_put =
+                      put_block(data.content, "".to_string(), "{}".to_string(), "".to_string(), 0);
+                let content_cid = result_ipfs_dag_put.cid;
+
+                let _ = storage.update_cid(
+                  data_key.clone(), 
+                  meta_contract_id.clone(), 
+                  data.alias.clone(), 
+                  data.public_key.clone(), 
+                  content_cid.clone(), 
+                  data.version.clone(),
+                );
+                d.cid = content_cid.clone();
+                final_metadatas.push(d);
               }
               Err(ServiceError::RecordNotFound(_)) => {
 

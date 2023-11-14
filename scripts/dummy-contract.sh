@@ -1,3 +1,3 @@
 #! /bin/bash
-aqua run --input ../aqua/validator.aqua --func 'publish(request)' --data-path dummy-contract2.json --addr /dns4/tuah.lineageprotocol.com/tcp/19991/wss/p2p/12D3KooWHBG9oaVx4i3vi6c1rSBUm7MLBmyGmmbHoZ23pmjDCnvK --timeout 120000
+aqua run --input ../aqua/validator.aqua --func 'publish(request)' --data-path dummy-contract2.json --addr /dns4/arthur.lineageprotocol.com/tcp/19991/wss/p2p/12D3KooWHBG9oaVx4i3vi6c1rSBUm7MLBmyGmmbHoZ23pmjDCnvK --timeout 120000
 # aqua run --input ../aqua/validator.aqua --func 'publish(request)' --data-path dummy-contract2.json --addr /ip4/127.0.0.1/tcp/9991/ws/p2p/12D3KooWHBG9oaVx4i3vi6c1rSBUm7MLBmyGmmbHoZ23pmjDCnvK --timeout 120000

@@ -432,7 +432,7 @@ pub fn send_cron_tx(
                 );
 
                 let _ = storage.write_cron_tx(cron_tx.clone());
-                let _ = storage.update_cron_block_no(hash.clone(),  tx_block_number.clone());
+                let _ = storage.update_cron_block_no(hash.clone(),  tx_block_number.clone() + 1);
             }
         }
         Err(ServiceError::RecordNotFound(_)) => {}

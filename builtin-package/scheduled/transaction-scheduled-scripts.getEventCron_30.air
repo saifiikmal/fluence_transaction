@@ -222,14 +222,19 @@
                               (match get_meta_contract_by_id-1.$.success! true
                                (seq
                                 (call %init_peer_id% (get_meta_contract_by_id-1.$.meta.meta_contract_id! "on_event") [llog-0 get_meta_contract_by_id-1.$.meta!] on_event)
-                                (xor
-                                 (match on_event.$.result! true
-                                  (seq
-                                   (call %init_peer_id% ("transaction" "set_metadata_cron") ["0x01" result-0 on_event.$.token_id! on_event.$.result! on_event.$.metadatas!] set_metadata_cron-2)
-                                   (call %init_peer_id% ("transaction" "send_cron_tx") [result-0.$.hash! llog-0.$.data! llog-0.$.block_number! llog-0.$.transaction_hash! on_event.$.token_id!] send_cron_tx-1)
+                                (fold on_event mr-0
+                                 (seq
+                                  (xor
+                                   (match mr-0.$.result! true
+                                    (seq
+                                     (call %init_peer_id% ("transaction" "set_metadata_cron") [mr-0.$.meta_contract_id! result-0 mr-0.$.token_id! mr-0.$.result! mr-0.$.metadatas!] set_metadata_cron-2)
+                                     (call %init_peer_id% ("transaction" "send_cron_tx") [result-0.$.hash! llog-0.$.data! llog-0.$.block_number! llog-0.$.transaction_hash! mr-0.$.token_id!] send_cron_tx-1)
+                                    )
+                                   )
+                                   (call %init_peer_id% ("op" "noop") [])
                                   )
+                                  (next mr-0)
                                  )
-                                 (call %init_peer_id% ("op" "noop") [])
                                 )
                                )
                               )

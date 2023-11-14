@@ -159,11 +159,12 @@ func getEventCron_30():
               if blockContract2.success:
                 MetaContract blockContract2.meta.meta_contract_id
                 -- call block contract 1st
-                meta_result2 = MetaContract.on_event(llog, blockContract2.meta)
+                meta_results = MetaContract.on_event(llog, blockContract2.meta)
 
-                if meta_result2.result:
-                  regResultMetadataCron2 = Node.set_metadata_cron("0x01", result, meta_result2.token_id, meta_result2.result, meta_result2.metadatas)
-                  resultCronTx2 = Node.send_cron_tx(result.hash, llog.data, llog.block_number, llog.transaction_hash, meta_result2.token_id)
+                for mr <- meta_results:
+                  if mr.result:
+                    regResultMetadataCron2 = Node.set_metadata_cron(mr.meta_contract_id, result, mr.token_id, mr.result, mr.metadatas)
+                    resultCronTx2 = Node.send_cron_tx(result.hash, llog.data, llog.block_number, llog.transaction_hash, mr.token_id)
           
             datas <<- llog
 
